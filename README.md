@@ -1,7 +1,3 @@
-# nanochat
-
-![nanochat logo](dev/nanochat.png)
-
 # NanoChat-Live: Multimodal Streaming Agent Fork of NanoChat
 
 ![nanochat logo](dev/nanochat.png)
