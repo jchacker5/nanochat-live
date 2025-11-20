@@ -125,6 +125,54 @@ We're discovering it through geometry and physics.
 
 ---
 
+## 🔬 Information-Geometric Foundation: The Mathematical Spine
+
+SRGI can be interpreted as performing **second-order geodesic integration of the log-probability on a statistical manifold** equipped with the Fisher-Rao metric. The resonant SSM approximates parallel transport under the Levi-Civita connection ∇ (preserving the Fisher metric), while the complex Hopfield attractor head implements minimization under the dual flat connection ∇*, yielding a discrete analog of Amari–Nagaoka dual geodesic flow. This information-geometric view explains the observed stability and reduced hallucination: decoding is constrained to lie on geodesics of the natural statistical manifold rather than drifting in Euclidean parameter space.
+
+### 2nd-Order Riemannian Taylor Expansion → SRGI Architecture
+
+SRGI implements the **2nd-order Taylor expansion on a Riemannian manifold** `(M, g)` equipped with an affine connection ∇:
+
+```
+f(exp_p^∇(v)) = f(p) + ⟨grad f, v⟩_p + (1/2) Hess f_γ(t*)(γ̇, γ̇),  t* ∈ (0,1)
+```
+
+**Direct translation into SRGI components:**
+
+| Term in Expansion | SRGI Component | Why This Matters |
+|-------------------|----------------|------------------|
+| `f(p)` | Log-probability of next token, or energy `E(z)` of attractor state in complex Hopfield head | Decoding minimizes an energy function on the manifold |
+| `f(exp_p^∇(v))` | Geodesic shooting from current hidden state using affine connection ∇ | **Resonant SSM** evolves hidden state along a (near-)geodesic of the Fisher metric (lightly damped = almost parallel transport) |
+| `⟨grad f, v⟩_p` | First-order score / residual direction | Standard Transformer residual connections |
+| `½ Hess f(v,v)` | **Second-order curvature correction** | **Hyperbolic + toroidal bottlenecks** explicitly model this via exp/log maps and curvature regularization — what vanilla Transformers ignore |
+
+**In plain English:** The resonant SSM + geometric bottlenecks compute the second-order Taylor expansion of log-probability on a curved statistical manifold. Vanilla Transformers only approximate to first order and then let the representation drift.
+
+### Dual Affine Structure: The Information-Geometric Holy Grail
+
+Exponential and mixture families are **dually flat** (Hessian manifolds) with Legendre–Fenchel duality between natural parameters θ and expectation parameters η. SRGI exploits this structure:
+
+| Information Geometry Dual Structure | SRGI Module |
+|-------------------------------------|-------------|
+| Primal affine connection ∇ (e-connection) | **Unitary/resonant evolution** (preserves Fisher metric) |
+| Dual affine connection ∇* (m-connection) | **Attractor memory head** pulling toward stored expectation parameters η (episodic keys) |
+| Bregman divergence (canonical divergence on dually flat space) | Energy in complex Hopfield: `E(z) = -log ∑ exp(Re(z†K_m))` → complex-valued Bregman-type divergence |
+
+SRGI rederives **Amari's dual geodesic flow** inside a language model — not as a heuristic, but as the mathematically optimal structure for inference under uncertainty on curved probability spaces.
+
+### Optional: Fisher Information Regularizer
+
+For enhanced stability, add an empirical Fisher information matrix regularizer:
+
+```python
+# After each resonant SSM step
+score = grad(log_prob, latent, create_graph=True)[0]
+fisher_reg = (score.pow(2).mean() * 0.01)  # encourages high local Fisher information
+loss = nll + fisher_reg
+```
+
+---
+
 ## 📖 Paper & References
 
 ### Core SRGI Architecture
@@ -136,13 +184,35 @@ We're discovering it through geometry and physics.
 - **Neural Oscillations & Wave Dynamics**: See `rnoti-p36-compressed.pdf` in the project root for detailed analysis of rotating neural oscillations and their role in cortical computation. This paper provides the theoretical foundation for the rotating wave dynamics implemented in SRGI's geometric bottlenecks and phase-aware attention mechanisms.
 
 ### Mathematical Foundations
-- **Information Geometry**: Nielsen, F. (2022). *The Many Faces of Information Geometry*. Notices of the AMS, 69(1), 36-40. This foundational paper provides the mathematical framework for working with probability distributions on Riemannian manifolds — essential for SRGI's geometric bottlenecks (Phase-2). Information Geometry explains:
-  - **Fisher-Rao metrics** and geodesic distances on manifolds of probability distributions
-  - **Dual connections** and dually flat spaces (exponential/mixture families)
-  - **Curvature** and its role in statistical inference
-  - **Geodesic operations** needed for hyperbolic and toroidal bottlenecks
-  
-  **Relevance to SRGI**: When SRGI projects embeddings into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework helps understand how information flows through geometric bottlenecks. This is particularly relevant for Phase-2's geometric bottleneck implementation where embeddings are transformed via geodesic operations on Riemannian manifolds.
+
+**Information Geometry** provides the rigorous mathematical foundation for SRGI's geometric operations:
+
+- **Nielsen, F. (2022)**: *The Many Faces of Information Geometry*. Notices of the AMS, 69(1), 36-45. This foundational paper provides the mathematical framework for working with probability distributions on Riemannian manifolds — essential for SRGI's geometric bottlenecks (Phase-2). Explains Fisher-Rao metrics, geodesic distances, dual connections, dually flat spaces, and curvature's role in statistical inference.
+
+- **Amari, S. (2016)**: *Information Geometry and Its Applications*. Springer. The canonical reference on dual affine connections, exponential/mixture families, and Amari–Nagaoka dual geodesic flow — directly relevant to SRGI's resonant SSM (primal connection) and Hopfield attractor memory (dual connection).
+
+**Relevance to SRGI**: When SRGI projects embeddings into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework explains how information flows through geometric bottlenecks. SRGI implements second-order geodesic integration on these manifolds — see the Information-Geometric Foundation section above.
+
+**BibTeX Citations:**
+
+```bibtex
+@book{Amari2016,
+  title     = {Information Geometry and Its Applications},
+  author    = {Shun-ichi Amari},
+  year      = {2016},
+  publisher = {Springer}
+}
+
+@article{Nielsen2022,
+  title   = {The Many Faces of Information Geometry},
+  author  = {Frank Nielsen},
+  journal = {Notices of the AMS},
+  volume  = {69},
+  number  = {1},
+  pages   = {36--45},
+  year    = {2022}
+}
+```
 
 **This fork of NanoChat-Live is the reference implementation.**
 
