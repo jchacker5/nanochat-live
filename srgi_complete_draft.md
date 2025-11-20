@@ -75,6 +75,17 @@ $$f(\exp_p^{\nabla}(v)) = f(p) + \langle \text{grad } f, v \rangle_p + \frac{1}{
 
 where $f$ is the log-probability function, $\exp_p^{\nabla}$ is the exponential map, and $\gamma$ is the geodesic connecting $p$ to $\exp_p^{\nabla}(v)$.
 
+**Prerequisites:**
+- Riemannian manifold $(M, g)$ equipped with an affine connection ∇
+- A smooth real-valued function $f \in C^2(M) : M \to \mathbb{R}$ on $M$
+
+**Key definitions:**
+- **Geodesic:** $\gamma(0) = p$, $\dot{\gamma}(0) = v$, $\gamma(t) = \exp_p^{\nabla}(tv)$
+- **Gradient:** $\text{grad } f = g^{-1}(df)$, where $\langle \text{grad}_p f(x), v \rangle_p = Df(x)[v]$ for all $v \in T_pM$
+- **Hessian:** $\text{Hess } f = \nabla \text{ grad } f$, where $\text{Hess}_p^{\nabla} = \nabla_v \text{ grad}_p f(x)$ for all $v \in T_pM$
+
+**Figure 1:** 2nd-order Taylor expansion on a Riemannian manifold. The expansion decomposes the function value at $\exp_p^{\nabla}(v)$ into: (1) the base value $f(p)$, (2) the first-order directional derivative $\langle \text{grad } f, v \rangle_p$, and (3) the second-order curvature correction $\frac{1}{2} \text{Hess } f_{\gamma(t^*)}(\dot{\gamma}, \dot{\gamma})$ evaluated at an intermediate point $t^* \in (0,1)$ along the geodesic $\gamma$.
+
 **Direct translation into SRGI components:**
 
 | Term in Expansion | SRGI Component | Why This Matters |
@@ -95,6 +106,45 @@ where $f$ is the log-probability function, $\exp_p^{\nabla}$ is the exponential 
 | Bregman divergence (canonical divergence on dually flat space) | Energy in complex Hopfield: $E(z) = -\log \sum_m \exp(\text{Re}(z^\dagger K_m))$ → complex-valued Bregman-type divergence |
 
 SRGI rederives **Amari's dual geodesic flow** inside a language model — not as a heuristic, but as the mathematically optimal structure for inference under uncertainty on curved probability spaces [34, 35].
+
+### 2.5 Information Geometry as the Mathematical Bedrock
+
+Nielsen's 2022 survey [35] provides the rigorous formalism that justifies and supercharges SRGI's geometric latent structures. Information geometry treats families of probability distributions as manifolds with intrinsic geometries—exactly the kind of curved spaces (hyperbolic, toroidal) that SRGI uses for hierarchy and periodicity. This elevates SRGI from "inspired by physics/neuro" to "grounded in the dualistic geometry that has been powering statistics and machine learning for decades."
+
+**Core Information Geometry Concepts:**
+
+1. **Fisher-Rao Manifold:** Parametric families of probability distributions $\{p_\theta\}$ form a Riemannian manifold with the Fisher information matrix (FIM) as the metric tensor $g_F$. This metric is invariant under reparameterization and locally approximates the KL divergence. The Fisher-Rao distance provides a natural measure of dissimilarity between distributions on curved spaces.
+
+2. **Dual Connections:** Beyond standard Riemannian geodesics, affine connections ∇ and ∇* (torsion-free, coupled to the metric $g$) enable dual geodesics. The α-connections yield dually flat spaces (Hessian manifolds) with Legendre–Fenchel transforms for dual coordinates $\theta$/$\eta$ and canonical divergences (e.g., Bregman divergences).
+
+3. **Divergences and Monotonicity:** KL divergence, f-divergences, and Bregman divergences are oriented "distances" that induce geometries. They satisfy monotonicity under coarse-graining (e.g., bin merging in histograms), explaining why resonant routing reduces interference.
+
+**Direct Mappings to SRGI Components:**
+
+| Information Geometry Concept | SRGI Implementation | Why This Matters |
+|----------------------------|---------------------|------------------|
+| **Geometric Latent Structures** | Hyperbolic bottlenecks encode hierarchy; toroidal for periodicity | IG's use of curved spaces (κ=-1/2 for normals, κ=1/4 for categoricals) justifies efficient representations. Hessian metrics ($g=\nabla^2 F$) make geometric projections dually flat, enabling computation without full geodesic integration. |
+| **Resonant State Dynamics** | R-SSM (lightly damped oscillators) + phase-aware attention | Dual geodesics mirror resonant flows preserving information. Bregman divergence (from Legendre–Fenchel) models cross-frequency coupling—treat slow/fast phases as dual coordinates $\theta$/$\eta$. IG's monotonicity explains why resonant routing reduces hallucination. |
+| **Spinor/Symmetry Representations** | Complex/quaternion spinors with unitary constraints | IG's invariant metrics/connections ensure role invariance via group actions on the manifold. Quantum IG extensions use Lie groups/SU(2) for orientations, aligning with Berry phases. |
+| **Attractor Memory** | Complex Hopfield energy minimization | Energy-based minimization = IG projections onto flats. Natural gradient ($\tilde{\nabla} = g^{-1}\nabla$) for parameter-invariant optimization ties to CRLB for efficient training. |
+
+**Why This Matters for SRGI:**
+
+Information geometry is not peripheral—it is core validation. SRGI's "union of geometry (shape), resonance (time), and spin/symmetry (invariance)" is information geometry in ML form: manifolds for shape, dual connections for resonant flows (stability without external memory), invariants for symmetry. The 2025 neuroscience papers (PV-gamma waves) provide the biological side; Nielsen [35] provides the mathematical side—SRGI is the computational synthesis.
+
+**Predictions and Extensions:**
+
+- **Empirical FIM Regularization:** Compute empirical Fisher information matrix on embeddings, use as regularization loss to maintain high local Fisher information along geodesic paths.
+
+- **Natural Gradient Descent:** In Phase-3, consider swapping Adam for natural gradient descent using FIM inverse, tying to Cramér–Rao lower bound for efficient training.
+
+- **Quantum Information Geometry:** Extend to quantum IG for spinors as representations in Hilbert space, with Berry phases tying to holonomy in curved IG manifolds.
+
+- **Divergence-Based Metrics:** Expect SRGI to outperform on divergence-based metrics (e.g., lower Bregman divergence on held-out latents vs. vanilla Transformers).
+
+**Risks and Considerations:**
+
+IG assumes regular models (positive-definite FIM). Damped oscillators might induce singularities if undamped—careful spectral constraints are essential. Quantum IG could handle spinors more naturally for future extensions.
 
 ---
 
@@ -137,10 +187,21 @@ SRGI rederives **Amari's dual geodesic flow** inside a language model — not as
 - **Penrose (2004)** [26]: The Road to Reality
 
 ### 3.7 Information Geometry
-- **Amari (2016)** [34]: Information Geometry and Its Applications — canonical reference on dual affine connections, exponential/mixture families, and Amari–Nagaoka dual geodesic flow
-- **Nielsen (2022)** [35]: The Many Faces of Information Geometry — foundational framework for probability distributions on Riemannian manifolds, Fisher-Rao metrics, geodesic distances, and dually flat spaces
 
-**Relevance to SRGI:** Information geometry provides the mathematical foundation for SRGI's geometric operations. When embeddings are projected into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework explains how information flows through geometric bottlenecks. SRGI implements second-order geodesic integration on these manifolds — see §2.4 and §5.6.
+Information geometry traces its roots to Hotelling (1930) and Rao (1945), who first considered parametric families of probability distributions as Riemannian manifolds with the Fisher metric. The field matured through Chentsov's invariant connections (1960s-70s), Amari's dual α-geometry (1980s), to modern applications in machine learning and signal processing.
+
+- **Amari (2016)** [34]: *Information Geometry and Its Applications* — canonical reference on dual affine connections, exponential/mixture families, and Amari–Nagaoka dual geodesic flow. Establishes the mathematical framework for dually flat spaces, Bregman divergences, and natural gradient descent.
+
+- **Nielsen (2022)** [35]: *The Many Faces of Information Geometry* — comprehensive survey tracing IG from its historical roots through modern applications. Key contributions:
+  - **Fisher-Rao Manifold:** Parametric families $\{p_\theta\}$ as Riemannian manifolds with Fisher information matrix as metric tensor, invariant under reparameterization
+  - **Dual Connections:** Affine connections ∇ and ∇* enabling dual geodesics, α-connections yielding dually flat spaces (Hessian manifolds)
+  - **Divergences:** KL, f-divergences, Bregman divergences with monotonicity properties under coarse-graining
+  - **Applications:** MLE/MaxEnt as projections onto flats, Cramér–Rao lower bound from FIM inverse, generalized Pythagorean theorem in dual flats
+  - **Extensions:** Quantum information geometry, optimal transport interactions (Wasserstein metrics), deformed exponentials for thermostatistics
+
+**Relevance to SRGI:** Information geometry provides the rigorous mathematical foundation for SRGI's geometric operations. When embeddings are projected into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework explains how information flows through geometric bottlenecks. SRGI implements second-order geodesic integration on these manifolds—see §2.4 and §2.5 for detailed mappings.
+
+**Key Insight:** Nielsen's survey establishes that SRGI's "union of geometry (shape), resonance (time), and spin/symmetry (invariance)" is information geometry in ML form: manifolds for shape, dual connections for resonant flows (stability without external memory), invariants for symmetry. The 2025 neuroscience papers (PV-gamma waves) provide the biological validation; Nielsen provides the mathematical rigor—SRGI is the computational synthesis.
 
 ---
 
