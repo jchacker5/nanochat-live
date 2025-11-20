@@ -6,6 +6,8 @@
 
 ## 🎭 Why SRGI Works: A Meme That Explains Everything
 
+![Information-geometric decoding in SRGI](IMG_8152.png)
+
 **Bae:** "Come over"  
 → The next-token prediction head calling the latent state toward a high-probability continuation (standard autoregressive decoding).
 
