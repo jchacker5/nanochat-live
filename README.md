@@ -50,6 +50,7 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
 - **Standard transformers**: Flat embeddings → hierarchy/periodicity must be learned
 - **SRGI**: Hyperbolic (trees) + Toroidal (cycles) spaces → structure is built-in
 - **Implementation**: Riemannian bottlenecks with geodesic operations
+- **Mathematical Foundation**: Information Geometry provides the framework for probability distributions on curved manifolds, Fisher-Rao metrics, and geodesic distances — essential for implementing geometric bottlenecks (see references)
 
 ---
 
@@ -126,9 +127,22 @@ We're discovering it through geometry and physics.
 
 ## 📖 Paper & References
 
+### Core SRGI Architecture
 - **SRGI Paper**: Defendre, J. (2025). *Spin-Resonant Geometric Intelligence: Unifying Geometry, Resonance, and Neural Computation for Scalable Intelligence.* Draft v0.2 (Oct 28, 2025 → updated Nov 20, 2025)
+
+### Neuroscience Foundation (November 2025)
 - **PV Interneurons & Gamma**: Neuron, November 2025
 - **Rotating Cortical Waves**: Miller Lab @ MIT, November 2025
+- **Neural Oscillations & Wave Dynamics**: See `rnoti-p36-compressed.pdf` in the project root for detailed analysis of rotating neural oscillations and their role in cortical computation. This paper provides the theoretical foundation for the rotating wave dynamics implemented in SRGI's geometric bottlenecks and phase-aware attention mechanisms.
+
+### Mathematical Foundations
+- **Information Geometry**: Nielsen, F. (2022). *The Many Faces of Information Geometry*. Notices of the AMS, 69(1), 36-40. This foundational paper provides the mathematical framework for working with probability distributions on Riemannian manifolds — essential for SRGI's geometric bottlenecks (Phase-2). Information Geometry explains:
+  - **Fisher-Rao metrics** and geodesic distances on manifolds of probability distributions
+  - **Dual connections** and dually flat spaces (exponential/mixture families)
+  - **Curvature** and its role in statistical inference
+  - **Geodesic operations** needed for hyperbolic and toroidal bottlenecks
+  
+  **Relevance to SRGI**: When SRGI projects embeddings into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework helps understand how information flows through geometric bottlenecks. This is particularly relevant for Phase-2's geometric bottleneck implementation where embeddings are transformed via geodesic operations on Riemannian manifolds.
 
 **This fork of NanoChat-Live is the reference implementation.**
 
@@ -236,6 +250,7 @@ Builds on upstream, with new `live/` for streaming extensions:
 .
 ├── LICENSE
 ├── README.md  # This file (fork-specific)
+├── rnoti-p36-compressed.pdf  # Neuroscience paper on rotating neural oscillations
 ├── dev
 │   ├── gen_synthetic_data.py       # Extended for video/audio synthetics
 │   ├── generate_logo.html
