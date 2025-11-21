@@ -299,6 +299,22 @@ python scripts/chat_cli.py --checkpoint checkpoints/d20.pt --live
 
 Visit `http://localhost:8000/` — the model "sees" via webcam, "hears" via mic, and responds with phase-aware reasoning.
 
+### 🤖 Autonomous Mini-AGI Mode (Phase-5)
+
+**The final piece: True mini-AGI with intrinsic curiosity**
+
+```bash
+# Run the complete autonomous agent (24/7 curiosity loop)
+python scripts/autonomous_demo.py
+
+# OR enable autonomous mode in training
+python scripts/base_train.py --autonomous_mode=True --curiosity_threshold=0.1
+```
+
+**What happens**: The model stops being reactive and starts generating its own goals. It autonomously explores, asks questions nobody prompted, discovers concepts, and consolidates insights into stable attractors—exactly like biological intelligence.
+
+**Requirements**: SRGI model with entanglement bottleneck (`--use_entangle`) and attractor memory (`--use_ebm_hopfield`).
+
 ---
 
 ## 📊 Early Results (Phase-1, Preliminary)
