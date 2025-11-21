@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Data (don't copy large data files)
+data/
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Checkpoints and outputs (mount as volumes instead)
+checkpoints/
+outputs/
+wandb/
+
+# Documentation
+*.pdf
+*.md
+!README.md
+
+# Visualizations (generated files)
+visualizations/*.png
+
+# Rust build artifacts
+rustbpe/target/
+rustbpe/**/*.rs.bk
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+

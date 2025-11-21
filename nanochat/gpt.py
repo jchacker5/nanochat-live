@@ -31,6 +31,15 @@ class GPTConfig:
     n_head: int = 6 # number of query heads
     n_kv_head: int = 6 # number of key/value heads (MQA)
     n_embd: int = 768
+    # SRGI extensions
+    use_hopfield: bool = False
+    use_ebm_hopfield: bool = False  # Use EBM variant instead of standard
+    hopfield_memory_size: int = 1024
+    hopfield_beta: float = 1.0
+    hopfield_n_steps: int = 3
+    ebm_sampling_method: str = 'block_gibbs'  # 'block_gibbs', 'gibbs', 'deterministic'
+    ebm_temperature: float = 1.0
+    ebm_use_thrml: bool = False  # Use THRML if available
 
 
 def norm(x):

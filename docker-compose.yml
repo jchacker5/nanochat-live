@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  srgi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nanochat-srgi
+    volumes:
+      # Mount project directory for development
+      - .:/app
+      # Mount data directory if you have one
+      - ./data:/app/data:ro
+      # Mount checkpoints/outputs
+      - ./checkpoints:/app/checkpoints
+      - ./outputs:/app/outputs
+      # Mount wandb directory for experiment tracking
+      - ./wandb:/app/wandb
+    environment:
+      - PYTHONPATH=/app
+      - WANDB_DIR=/app/wandb
+    ports:
+      # FastAPI web interface
+      - "8000:8000"
+    stdin_open: true
+    tty: true
+    # For GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: /bin/bash
+
+  # Optional: Jupyter notebook service
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nanochat-jupyter
+    volumes:
+      - .:/app
+      - ./notebooks:/app/notebooks
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONPATH=/app
+    command: >
+      bash -c "pip install jupyter notebook &&
+               jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --notebook-dir=/app"
+

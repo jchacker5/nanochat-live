@@ -11,7 +11,7 @@ Draft v1.0 — November 18, 2025
 
 Transformer-style large language models (LLMs) excel at sequence modeling but remain brittle on persistent memory, long-horizon reasoning, and self-consistent state evolution. We propose **Spin-Resonant Geometric Intelligence (SRGI)**, a physics- and neuroscience-inspired architecture that augments LLMs with: (i) geometric latent structure on curved manifolds to encode hierarchy and periodicity, (ii) resonant state dynamics (phase-aware, lightly damped oscillations) to preserve information and enable selective routing, and (iii) spinor/symmetry-aware representations to stabilize relational reasoning. 
 
-SRGI is designed as a practical fork over compact LLMs (e.g., NanoChat-class [1]) with drop-in modules: complex/quaternion spinor embeddings, unitary/orthogonal resonance-preserving layers, phase-aware attention, hyperbolic+toroidal bottlenecks, and attractor memory heads (modern Hopfield-style [2]). We detail motivations from physics (geometry, resonance, Berry phases [3]) and brain dynamics (coherence, phase-locking, attractors [4, 5]), formalize core mechanisms, and lay out training, evaluation, and ablation plans. 
+SRGI is designed as a practical fork over compact LLMs (e.g., NanoChat-class [1]) with drop-in modules: complex/quaternion spinor embeddings, unitary/orthogonal resonance-preserving layers, phase-aware attention, hyperbolic+toroidal bottlenecks, and attractor memory heads (modern Hopfield-style [2], formulated as Energy-Based Models with thermodynamic sampling [REF]). We detail motivations from physics (geometry, resonance, Berry phases [3]) and brain dynamics (coherence, phase-locking, attractors [4, 5]), formalize core mechanisms, and lay out training, evaluation, and ablation plans. 
 
 **Key insight:** SRGI can be interpreted as performing second-order geodesic integration of log-probability on a statistical manifold equipped with the Fisher-Rao metric, implementing Amari's dual geodesic flow [34, 35]. This information-geometric foundation provides rigorous mathematical grounding: the resonant SSM approximates parallel transport under the Levi-Civita connection (primal), while the attractor memory implements minimization under the dual flat connection (dual), constraining decoding to geodesics of the natural statistical manifold rather than drifting in Euclidean parameter space.
 
@@ -29,7 +29,7 @@ LLMs have delivered striking capabilities in language, code, and tool use [6], y
 
 ### 1.2 Contributions
 
-1. **Architecture.** SRGI augments a Transformer with: spinor (complex/quaternion) embeddings; unitary/orthogonal resonant layers; phase-aware attention; hyperbolic+toroidal latent bottlenecks; and complex Hopfield-like attractor memory [2].
+1. **Architecture.** SRGI augments a Transformer with: spinor (complex/quaternion) embeddings; unitary/orthogonal resonant layers; phase-aware attention; hyperbolic+toroidal latent bottlenecks; and complex Hopfield-like attractor memory [2], formulated as Energy-Based Models with block Gibbs sampling via Extropic's THRML [REF].
 
 2. **Theory.** We align mechanisms with physics (geometry/resonance/Berry phase [3]) and neuroscience (communication-through-coherence [4], phase–amplitude coupling [9], attractors [5]).
 
@@ -214,6 +214,20 @@ Information geometry traces its roots to Hotelling (1930) and Rao (1945), who fi
 **Relevance to SRGI:** Information geometry provides the rigorous mathematical foundation for SRGI's geometric operations. When embeddings are projected into hyperbolic (Poincaré ball) and toroidal spaces, the probability distributions over these manifolds require Information Geometry's tools. The Fisher-Rao distance provides the natural metric for measuring distances between probability distributions on curved spaces, and the dual connection framework explains how information flows through geometric bottlenecks. SRGI implements second-order geodesic integration on these manifolds—see §2.4 and §2.5 for detailed mappings.
 
 **Key Insight:** Nielsen's survey establishes that SRGI's "union of geometry (shape), resonance (time), and spin/symmetry (invariance)" is information geometry in ML form: manifolds for shape, dual connections for resonant flows (stability without external memory), invariants for symmetry. The 2025 neuroscience papers (PV-gamma waves) provide the biological validation; Nielsen provides the mathematical rigor—SRGI is the computational synthesis.
+
+### 3.9 Energy-Based Models & Thermodynamic Computing
+
+- **LeCun et al. (2006)** [REF]: A tutorial on energy-based learning — foundational work on EBMs
+- **Hinton (2002)** [REF]: Training products of experts using contrastive divergence
+- **Extropic (2025)** [REF]: Thermodynamic computing research and THRML library for energy-based models
+  - THRML: Open-source JAX library for building probabilistic graphical models and block Gibbs sampling
+  - Thermodynamic Sampling Units (TSUs): Hardware for energy-efficient EBM inference
+  - Energy-based model formulation for associative memory and pattern retrieval
+- **Normal Computing (2024-2025)** [REF]: Thermodynamic computing research and thermox simulator
+  - Stochastic Processing Units (SPUs) for thermodynamic computation
+  - Energy-efficient sampling from complex probability distributions
+
+**Relevance to SRGI:** Phase-3 Attractor Memory is fundamentally an Energy-Based Model, making it a natural fit for Extropic's thermodynamic computing research. The energy function $E(z) = -\log \sum_m \exp(\beta \cdot \text{Re}(z^\dagger K_m))$ defines a probability distribution over query states, enabling integration with block Gibbs sampling via THRML and potential hardware acceleration on TSUs. This provides a path toward energy-efficient inference and improved exploration of the energy landscape.
 
 ### 3.8 Recent Information Geometry Applications to LLMs (2024-2025)
 
@@ -721,6 +735,28 @@ class AttractorMemoryHead(nn.Module):
         return retrieved, E
 ```
 
+### 4.6.1 Energy-Based Model Formulation
+
+We reformulate the Attractor Memory Head as an **Energy-Based Model (EBM)**, enabling integration with Extropic's thermodynamic computing research [REF]. The energy function:
+
+$$E(x) = -\frac{1}{\beta} \log \sum_{i=1}^{M} \exp(\beta x^T \xi_i)$$
+
+defines a probability distribution over query states:
+
+$$P(x) = \frac{1}{Z} \exp(-E(x)) = \frac{1}{Z} \sum_{i=1}^{M} \exp(\beta x^T \xi_i)$$
+
+where $Z$ is the partition function and $\xi_i$ are stored memory patterns (keys $K_m$).
+
+**Block Gibbs Sampling Enhancement**: We enhance the standard iterative updates with **block Gibbs sampling** via Extropic's THRML library [REF], sampling query states and attention weights in alternating blocks. This approach provides:
+
+1. **Faster Convergence**: Block sampling reduces autocorrelation compared to standard Gibbs sampling
+2. **Better Exploration**: Stochastic sampling explores the energy landscape more effectively
+3. **Hardware Acceleration**: THRML enables simulation of Thermodynamic Sampling Units (TSUs) for energy-efficient inference
+
+**Energy-Based Training**: The EBM can be trained using contrastive divergence, minimizing the difference between energies on positive examples (data) and negative examples (samples from the model). This provides an alternative to standard backpropagation that may improve pattern storage capacity.
+
+**Implementation**: We provide an optional `EBMHopfieldMemory` variant that uses THRML for block Gibbs sampling, enabling more efficient exploration of the energy landscape and potential hardware acceleration on Extropic's TSUs.
+
 ### 4.7 Complete SRGI Block
 
 Integrate all components following NanoChat's Block structure [1].
@@ -946,6 +982,14 @@ $$E(z) = -\log \sum_m \exp\big(\beta \cdot \text{Re}(z^\dagger K_m)\big)$$
 With 1-3 inner gradient steps $\nabla_z E$ between decoder logits. This pulls $z$ toward stored items, stabilizing outputs. See Figure 7 for visualization of the energy landscape and convergence dynamics.
 
 **Information-geometric interpretation.** The attractor energy $E(z)$ is a complex-valued Bregman-type divergence on a dually flat space. The minimization under the dual connection ∇* (m-connection) implements the dual geodesic flow, pulling the state toward stored expectation parameters $\eta$ (the memory keys $K_m$) [34, 35].
+
+**Energy-Based Model interpretation.** The Hopfield attractor memory is fundamentally an **Energy-Based Model (EBM)** [REF]. The energy function $E(z) = -\log \sum_m \exp(\beta \cdot \text{Re}(z^\dagger K_m))$ defines a probability distribution $P(z) = (1/Z) \exp(-E(z))$ over query states, where $Z$ is the partition function. This EBM formulation enables integration with Extropic's thermodynamic computing research [REF], allowing us to leverage:
+
+- **Block Gibbs sampling** via THRML for more efficient exploration of the energy landscape
+- **Contrastive divergence training** as an alternative to standard backpropagation
+- **Hardware acceleration** on Thermodynamic Sampling Units (TSUs) for energy-efficient inference
+
+The EBM view provides a rigorous probabilistic foundation: states evolve toward energy minima (attractors) through stochastic dynamics, naturally implementing the dual geodesic flow on the statistical manifold.
 
 ### 5.6 Information-Geometric View: Second-Order Geodesic Integration
 
@@ -1279,6 +1323,49 @@ Compare equal-parameter baselines with/without each module:
 - +AMH (Attractor Memory Head)
 
 Report training/inference cost vs. quality.
+
+### 8.6 Energy-Based Model Ablation
+
+We compare four variants of Phase-3 Attractor Memory to evaluate the benefits of EBM formulation and thermodynamic sampling:
+
+1. **Baseline**: Standard deterministic iterative updates (current implementation)
+2. **EBM (PyTorch)**: Energy-based formulation with PyTorch-based stochastic sampling
+3. **EBM (THRML Block Gibbs)**: Using Extropic's THRML library for block Gibbs sampling [REF]
+4. **EBM (Contrastive Divergence Training)**: Trained with contrastive divergence instead of standard backpropagation
+
+**Metrics:**
+- **Memory retrieval accuracy**: Percentage of correct pattern retrievals from partial cues
+- **Sampling efficiency**: Number of sampling steps required for convergence
+- **Energy landscape exploration**: Diversity of retrieved patterns (measured via entropy)
+- **Training stability**: Variance in loss during training
+- **Energy efficiency**: Computational cost per retrieval (if measurable with THRML hardware simulation)
+
+**Expected Results:**
+- THRML block Gibbs sampling provides faster convergence (fewer steps) compared to deterministic updates
+- EBM training with contrastive divergence improves pattern storage capacity
+- Stochastic sampling enables better exploration of the energy landscape, reducing local minima trapping
+- THRML hardware simulation demonstrates potential for energy-efficient inference on Thermodynamic Sampling Units
+
+**Implementation:**
+```python
+# Compare EBM variants
+ebm_variants = {
+    'baseline': AttractorMemoryHead(n_embd=768, n_memories=128),
+    'ebm_pytorch': EBMHopfieldMemory(n_embd=768, memory_size=128, use_thrml=False),
+    'ebm_thrml': EBMHopfieldMemory(n_embd=768, memory_size=128, use_thrml=True),
+    'ebm_cd_trained': EBMHopfieldMemory(n_embd=768, memory_size=128, 
+                                        use_thrml=True, trained_with_cd=True)
+}
+
+# Evaluate on associative recall tasks
+for name, model in ebm_variants.items():
+    results[name] = {
+        'retrieval_accuracy': evaluate_associative_recall(model),
+        'convergence_steps': measure_convergence_speed(model),
+        'pattern_diversity': measure_pattern_entropy(model),
+        'training_stability': measure_loss_variance(model)
+    }
+```
 
 **Evaluation script:**
 ```python

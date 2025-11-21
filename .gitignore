@@ -1,7 +1,47 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+ENV/
+
+# Docker
+*.log
+
+# Data
+data/
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Checkpoints and outputs
+checkpoints/
+outputs/
+wandb/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rust
 rustbpe/target/
-dev-ignore/
-report.md
-eval_bundle/
+rustbpe/**/*.rs.bk
+
+# Temporary
+*.tmp
+*.cache
