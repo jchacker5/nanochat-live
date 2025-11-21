@@ -409,6 +409,434 @@ def plot_phase3_hopfield_attractors():
     return fig
 
 
+def plot_phase3_iterative_convergence():
+    """Phase-3: Show step-by-step iterative convergence process."""
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    
+    # Simulate iterative convergence
+    n_steps = 5
+    n_patterns = 8
+    n_embd = 64
+    
+    np.random.seed(42)
+    # Create memory patterns
+    patterns = np.random.randn(n_patterns, n_embd) * 0.5
+    patterns = patterns / np.linalg.norm(patterns, axis=1, keepdims=True)  # Normalize
+    
+    # Create a query (corrupted version of pattern 0)
+    query = patterns[0] + np.random.randn(n_embd) * 0.3
+    query = query / np.linalg.norm(query)
+    
+    # Simulate iterative updates
+    beta = 1.0
+    state = query.copy()
+    states = [state.copy()]
+    energies = []
+    attention_weights = []
+    
+    for step in range(n_steps):
+        # Compute similarities
+        sim = (state @ patterns.T) * beta
+        attn = np.exp(sim - np.max(sim))  # Numerical stability
+        attn = attn / attn.sum()
+        attention_weights.append(attn)
+        
+        # Retrieve weighted combination
+        retrieved = attn @ patterns
+        
+        # Update state
+        state = 0.5 * state + 0.5 * retrieved
+        states.append(state.copy())
+        
+        # Compute energy
+        energy = -np.log(np.sum(np.exp(sim)))
+        energies.append(energy)
+    
+    # Plot 1: State evolution in 2D projection (PCA)
+    try:
+        from sklearn.decomposition import PCA
+        pca = PCA(n_components=2)
+        all_states = np.vstack([states, patterns])
+        pca.fit(all_states)
+        states_2d = pca.transform(states)
+        patterns_2d = pca.transform(patterns)
+        
+        axes[0, 0].scatter(patterns_2d[:, 0], patterns_2d[:, 1], c='gray', s=100, 
+                          alpha=0.5, label='Memory Patterns', marker='s')
+        axes[0, 0].plot(states_2d[:, 0], states_2d[:, 1], 'b-o', linewidth=2, 
+                        markersize=8, label='Convergence Path', zorder=5)
+        axes[0, 0].scatter([states_2d[0, 0]], [states_2d[0, 1]], c='red', s=150, 
+                          marker='*', label='Initial Query', zorder=6)
+        axes[0, 0].scatter([states_2d[-1, 0]], [states_2d[-1, 1]], c='green', s=150, 
+                          marker='*', label='Final State', zorder=6)
+        axes[0, 0].set_xlabel('PC1', fontsize=10)
+        axes[0, 0].set_ylabel('PC2', fontsize=10)
+        axes[0, 0].set_title('State Evolution (2D Projection)', fontsize=11, fontweight='bold')
+        axes[0, 0].legend(fontsize=9)
+        axes[0, 0].grid(True, alpha=0.3)
+    except ImportError:
+        # Fallback if sklearn not available - use simple 2D projection
+        # Use first two dimensions as projection
+        states_2d = np.array([[s[0], s[1]] for s in states])
+        patterns_2d = patterns[:, :2]
+        
+        axes[0, 0].scatter(patterns_2d[:, 0], patterns_2d[:, 1], c='gray', s=100, 
+                          alpha=0.5, label='Memory Patterns', marker='s')
+        axes[0, 0].plot(states_2d[:, 0], states_2d[:, 1], 'b-o', linewidth=2, 
+                        markersize=8, label='Convergence Path', zorder=5)
+        axes[0, 0].scatter([states_2d[0, 0]], [states_2d[0, 1]], c='red', s=150, 
+                          marker='*', label='Initial Query', zorder=6)
+        axes[0, 0].scatter([states_2d[-1, 0]], [states_2d[-1, 1]], c='green', s=150, 
+                          marker='*', label='Final State', zorder=6)
+        axes[0, 0].set_xlabel('Dimension 0', fontsize=10)
+        axes[0, 0].set_ylabel('Dimension 1', fontsize=10)
+        axes[0, 0].set_title('State Evolution (2D Projection)', fontsize=11, fontweight='bold')
+        axes[0, 0].legend(fontsize=9)
+        axes[0, 0].grid(True, alpha=0.3)
+    
+    # Plot 2: Energy evolution
+    axes[0, 1].plot(range(1, n_steps + 1), energies, 'b-o', linewidth=2, markersize=8)
+    axes[0, 1].set_xlabel('Iteration', fontsize=10)
+    axes[0, 1].set_ylabel('Energy', fontsize=10)
+    axes[0, 1].set_title('Energy Minimization', fontsize=11, fontweight='bold')
+    axes[0, 1].grid(True, alpha=0.3)
+    
+    # Plot 3: Attention weights evolution
+    attention_array = np.array(attention_weights)
+    im = axes[0, 2].imshow(attention_array.T, cmap='hot', aspect='auto', origin='lower')
+    axes[0, 2].set_xlabel('Iteration', fontsize=10)
+    axes[0, 2].set_ylabel('Memory Pattern Index', fontsize=10)
+    axes[0, 2].set_title('Attention Weights Over Iterations', fontsize=11, fontweight='bold')
+    plt.colorbar(im, ax=axes[0, 2], label='Weight')
+    
+    # Plot 4: Similarity to target pattern
+    target_pattern = patterns[0]
+    similarities = [np.dot(s, target_pattern) for s in states]
+    axes[1, 0].plot(range(len(states)), similarities, 'g-o', linewidth=2, markersize=8)
+    axes[1, 0].axhline(1.0, color='r', linestyle='--', alpha=0.5, label='Perfect Match')
+    axes[1, 0].set_xlabel('Iteration', fontsize=10)
+    axes[1, 0].set_ylabel('Similarity to Target', fontsize=10)
+    axes[1, 0].set_title('Convergence to Target Pattern', fontsize=11, fontweight='bold')
+    axes[1, 0].legend()
+    axes[1, 0].grid(True, alpha=0.3)
+    
+    # Plot 5: Distance to nearest pattern
+    distances = []
+    for state in states:
+        dists = np.linalg.norm(patterns - state, axis=1)
+        distances.append(np.min(dists))
+    axes[1, 1].plot(range(len(states)), distances, 'm-o', linewidth=2, markersize=8)
+    axes[1, 1].set_xlabel('Iteration', fontsize=10)
+    axes[1, 1].set_ylabel('Distance to Nearest Pattern', fontsize=10)
+    axes[1, 1].set_title('Distance Minimization', fontsize=11, fontweight='bold')
+    axes[1, 1].grid(True, alpha=0.3)
+    
+    # Plot 6: Final attention distribution
+    final_attn = attention_weights[-1]
+    axes[1, 2].bar(range(n_patterns), final_attn, color='steelblue', alpha=0.7)
+    axes[1, 2].axvline(0, color='red', linestyle='--', linewidth=2, alpha=0.7, label='Target Pattern')
+    axes[1, 2].set_xlabel('Memory Pattern Index', fontsize=10)
+    axes[1, 2].set_ylabel('Attention Weight', fontsize=10)
+    axes[1, 2].set_title('Final Attention Distribution', fontsize=11, fontweight='bold')
+    axes[1, 2].legend()
+    axes[1, 2].grid(True, alpha=0.3, axis='y')
+    
+    fig.suptitle('Phase-3: Iterative Convergence Process\n(Step-by-Step Energy Minimization)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    return fig
+
+
+def plot_phase3_associative_recall():
+    """Phase-3: Demonstrate associative recall with partial cues."""
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    
+    n_patterns = 6
+    n_embd = 128
+    np.random.seed(42)
+    
+    # Create memory patterns (each is a "concept")
+    patterns = []
+    pattern_names = ['Cat', 'Dog', 'Bird', 'Tree', 'Car', 'House']
+    for i in range(n_patterns):
+        pattern = np.random.randn(n_embd)
+        pattern = pattern / np.linalg.norm(pattern)
+        patterns.append(pattern)
+    patterns = np.array(patterns)
+    
+    # Create partial cues (corrupted versions)
+    corruption_levels = [0.2, 0.4, 0.6, 0.8]
+    beta = 1.5
+    
+    # Plot 1: Show original patterns (as heatmaps)
+    im1 = axes[0, 0].imshow(patterns, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
+    axes[0, 0].set_yticks(range(n_patterns))
+    axes[0, 0].set_yticklabels(pattern_names)
+    axes[0, 0].set_xlabel('Embedding Dimension', fontsize=10)
+    axes[0, 0].set_title('Stored Memory Patterns', fontsize=11, fontweight='bold')
+    plt.colorbar(im1, ax=axes[0, 0], label='Value')
+    
+    # Plot 2: Retrieval accuracy vs corruption
+    target_idx = 0  # Try to retrieve "Cat"
+    target_pattern = patterns[target_idx]
+    
+    accuracies = []
+    for corruption in corruption_levels:
+        # Create corrupted query
+        noise = np.random.randn(n_embd) * corruption
+        query = target_pattern + noise
+        query = query / np.linalg.norm(query)
+        
+        # Simulate retrieval
+        sim = (query @ patterns.T) * beta
+        attn = np.exp(sim - np.max(sim))
+        attn = attn / attn.sum()
+        
+        # Check if correct pattern has highest attention
+        retrieved_idx = np.argmax(attn)
+        accuracy = 1.0 if retrieved_idx == target_idx else 0.0
+        accuracies.append(accuracy)
+    
+    axes[0, 1].plot(corruption_levels, accuracies, 'b-o', linewidth=2, markersize=10)
+    axes[0, 1].set_xlabel('Corruption Level (Noise σ)', fontsize=10)
+    axes[0, 1].set_ylabel('Retrieval Accuracy', fontsize=10)
+    axes[0, 1].set_title('Associative Recall Robustness', fontsize=11, fontweight='bold')
+    axes[0, 1].set_ylim(-0.1, 1.1)
+    axes[0, 1].grid(True, alpha=0.3)
+    axes[0, 1].set_yticks([0, 1])
+    axes[0, 1].set_yticklabels(['Wrong', 'Correct'])
+    
+    # Plot 3: Attention weights for different corruption levels
+    corruption_to_show = [0.2, 0.6]
+    for idx, corruption in enumerate(corruption_to_show):
+        noise = np.random.randn(n_embd) * corruption
+        query = target_pattern + noise
+        query = query / np.linalg.norm(query)
+        
+        sim = (query @ patterns.T) * beta
+        attn = np.exp(sim - np.max(sim))
+        attn = attn / attn.sum()
+        
+        axes[1, idx].bar(range(n_patterns), attn, color='steelblue', alpha=0.7)
+        axes[1, idx].axvline(target_idx, color='red', linestyle='--', linewidth=2, 
+                            alpha=0.7, label='Target Pattern')
+        axes[1, idx].set_xlabel('Memory Pattern', fontsize=10)
+        axes[1, idx].set_ylabel('Attention Weight', fontsize=10)
+        axes[1, idx].set_title(f'Retrieval (σ={corruption})', fontsize=11, fontweight='bold')
+        axes[1, idx].set_xticks(range(n_patterns))
+        axes[1, idx].set_xticklabels(pattern_names, rotation=45, ha='right')
+        axes[1, idx].legend()
+        axes[1, idx].grid(True, alpha=0.3, axis='y')
+    
+    fig.suptitle('Phase-3: Associative Recall\n(Partial Cues → Full Pattern Retrieval)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    return fig
+
+
+def plot_phase3_denoising():
+    """Phase-3: Demonstrate denoising property."""
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    
+    n_patterns = 4
+    n_embd = 64
+    n_steps = 5
+    beta = 1.0
+    
+    np.random.seed(42)
+    # Create clean patterns
+    patterns = np.random.randn(n_patterns, n_embd) * 0.5
+    patterns = patterns / np.linalg.norm(patterns, axis=1, keepdims=True)
+    
+    # Create corrupted input (pattern 0 + noise)
+    target_pattern = patterns[0]
+    noise_level = 0.5
+    corrupted = target_pattern + np.random.randn(n_embd) * noise_level
+    corrupted = corrupted / np.linalg.norm(corrupted)
+    
+    # Simulate denoising process
+    state = corrupted.copy()
+    states = [state.copy()]
+    errors = [np.linalg.norm(state - target_pattern)]
+    
+    for step in range(n_steps):
+        sim = (state @ patterns.T) * beta
+        attn = np.exp(sim - np.max(sim))
+        attn = attn / attn.sum()
+        retrieved = attn @ patterns
+        state = 0.5 * state + 0.5 * retrieved
+        states.append(state.copy())
+        errors.append(np.linalg.norm(state - target_pattern))
+    
+    # Plot 1: Pattern comparison (original, corrupted, denoised)
+    pattern_comparison = np.array([target_pattern, corrupted, states[-1]])
+    im1 = axes[0, 0].imshow(pattern_comparison, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
+    axes[0, 0].set_yticks([0, 1, 2])
+    axes[0, 0].set_yticklabels(['Original', 'Corrupted', 'Denoised'])
+    axes[0, 0].set_xlabel('Dimension', fontsize=10)
+    axes[0, 0].set_title('Pattern Comparison', fontsize=11, fontweight='bold')
+    plt.colorbar(im1, ax=axes[0, 0], label='Value')
+    
+    # Plot 2: Error reduction over iterations
+    axes[0, 1].plot(range(len(errors)), errors, 'r-o', linewidth=2, markersize=8)
+    axes[0, 1].axhline(0, color='g', linestyle='--', alpha=0.5, label='Perfect Recovery')
+    axes[0, 1].set_xlabel('Iteration', fontsize=10)
+    axes[0, 1].set_ylabel('Error (L2 Distance)', fontsize=10)
+    axes[0, 1].set_title('Denoising: Error Reduction', fontsize=11, fontweight='bold')
+    axes[0, 1].legend()
+    axes[0, 1].grid(True, alpha=0.3)
+    
+    # Plot 3: Similarity to target over iterations
+    similarities = [np.dot(s, target_pattern) for s in states]
+    axes[1, 0].plot(range(len(similarities)), similarities, 'b-o', linewidth=2, markersize=8)
+    axes[1, 0].axhline(1.0, color='g', linestyle='--', alpha=0.5, label='Perfect Match')
+    axes[1, 0].set_xlabel('Iteration', fontsize=10)
+    axes[1, 0].set_ylabel('Similarity to Target', fontsize=10)
+    axes[1, 0].set_title('Convergence to Clean Pattern', fontsize=11, fontweight='bold')
+    axes[1, 0].legend()
+    axes[1, 0].grid(True, alpha=0.3)
+    
+    # Plot 4: Multiple noise levels
+    noise_levels = [0.1, 0.3, 0.5, 0.7, 0.9]
+    final_errors = []
+    for noise_level in noise_levels:
+        corrupted = target_pattern + np.random.randn(n_embd) * noise_level
+        corrupted = corrupted / np.linalg.norm(corrupted)
+        state = corrupted.copy()
+        for _ in range(n_steps):
+            sim = (state @ patterns.T) * beta
+            attn = np.exp(sim - np.max(sim))
+            attn = attn / attn.sum()
+            retrieved = attn @ patterns
+            state = 0.5 * state + 0.5 * retrieved
+        final_errors.append(np.linalg.norm(state - target_pattern))
+    
+    axes[1, 1].plot(noise_levels, final_errors, 'm-o', linewidth=2, markersize=8)
+    axes[1, 1].set_xlabel('Initial Noise Level (σ)', fontsize=10)
+    axes[1, 1].set_ylabel('Final Error', fontsize=10)
+    axes[1, 1].set_title('Denoising Robustness', fontsize=11, fontweight='bold')
+    axes[1, 1].grid(True, alpha=0.3)
+    
+    fig.suptitle('Phase-3: Denoising Property\n(Corrupted Inputs → Clean Patterns)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    return fig
+
+
+def plot_phase3_memory_capacity():
+    """Phase-3: Visualize memory capacity and pattern separation."""
+    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    
+    n_embd = 64
+    memory_sizes = [8, 16, 32, 64, 128, 256, 512, 1024]
+    n_trials = 20
+    
+    np.random.seed(42)
+    
+    # Test retrieval accuracy for different memory sizes
+    accuracies = []
+    for mem_size in memory_sizes:
+        correct = 0
+        for trial in range(n_trials):
+            # Create patterns
+            patterns = np.random.randn(mem_size, n_embd) * 0.5
+            patterns = patterns / np.linalg.norm(patterns, axis=1, keepdims=True)
+            
+            # Pick a target
+            target_idx = np.random.randint(mem_size)
+            target_pattern = patterns[target_idx]
+            
+            # Create query (slightly corrupted)
+            query = target_pattern + np.random.randn(n_embd) * 0.2
+            query = query / np.linalg.norm(query)
+            
+            # Retrieve
+            beta = 1.0
+            query_norm = query / (np.linalg.norm(query) + 1e-10)
+            sim = (query_norm @ patterns.T) * beta
+            retrieved_idx = np.argmax(sim)
+            
+            if retrieved_idx == target_idx:
+                correct += 1
+        
+        accuracies.append(correct / n_trials)
+    
+    # Plot 1: Accuracy vs memory size
+    axes[0, 0].semilogx(memory_sizes, accuracies, 'b-o', linewidth=2, markersize=8)
+    axes[0, 0].axhline(0.9, color='r', linestyle='--', alpha=0.5, label='90% Threshold')
+    axes[0, 0].set_xlabel('Memory Size (Number of Patterns)', fontsize=10)
+    axes[0, 0].set_ylabel('Retrieval Accuracy', fontsize=10)
+    axes[0, 0].set_title('Memory Capacity', fontsize=11, fontweight='bold')
+    axes[0, 0].legend()
+    axes[0, 0].grid(True, alpha=0.3)
+    
+    # Plot 2: Pattern similarity matrix
+    mem_size_show = 16
+    patterns_show = np.random.randn(mem_size_show, n_embd) * 0.5
+    patterns_show = patterns_show / np.linalg.norm(patterns_show, axis=1, keepdims=True)
+    similarity_matrix = patterns_show @ patterns_show.T
+    
+    im2 = axes[0, 1].imshow(similarity_matrix, cmap='coolwarm', aspect='auto', 
+                           vmin=-1, vmax=1)
+    axes[0, 1].set_xlabel('Pattern Index', fontsize=10)
+    axes[0, 1].set_ylabel('Pattern Index', fontsize=10)
+    axes[0, 1].set_title('Pattern Similarity Matrix', fontsize=11, fontweight='bold')
+    plt.colorbar(im2, ax=axes[0, 1], label='Cosine Similarity')
+    
+    # Plot 3: Energy distribution
+    mem_size_energy = 64
+    patterns_energy = np.random.randn(mem_size_energy, n_embd) * 0.5
+    patterns_energy = patterns_energy / np.linalg.norm(patterns_energy, axis=1, keepdims=True)
+    
+    # Sample random queries and compute energies
+    energies = []
+    for _ in range(100):
+        query = np.random.randn(n_embd)
+        query = query / (np.linalg.norm(query) + 1e-10)
+        sim = query @ patterns_energy.T
+        # Numerical stability: subtract max before exp
+        sim_max = np.max(sim)
+        energy = -np.log(np.sum(np.exp(sim - sim_max)) + 1e-10) - sim_max
+        energies.append(energy)
+    
+    axes[1, 0].hist(energies, bins=30, color='steelblue', alpha=0.7, edgecolor='black')
+    axes[1, 0].set_xlabel('Energy', fontsize=10)
+    axes[1, 0].set_ylabel('Frequency', fontsize=10)
+    axes[1, 0].set_title('Energy Distribution (Random Queries)', fontsize=11, fontweight='bold')
+    axes[1, 0].grid(True, alpha=0.3, axis='y')
+    
+    # Plot 4: Attention sparsity
+    mem_size_sparse = 128
+    patterns_sparse = np.random.randn(mem_size_sparse, n_embd) * 0.5
+    patterns_sparse = patterns_sparse / np.linalg.norm(patterns_sparse, axis=1, keepdims=True)
+    
+    sparsities = []
+    beta_values = [0.5, 1.0, 2.0, 4.0]
+    for beta in beta_values:
+        query = np.random.randn(n_embd)
+        query = query / (np.linalg.norm(query) + 1e-10)
+        sim = (query @ patterns_sparse.T) * beta
+        sim_max = np.max(sim)
+        attn = np.exp(sim - sim_max)
+        attn = attn / (attn.sum() + 1e-10)
+        # Sparsity = 1 - entropy / log(n)
+        entropy = -np.sum(attn * np.log(attn + 1e-10))
+        max_entropy = np.log(mem_size_sparse + 1e-10)
+        sparsity = 1 - entropy / (max_entropy + 1e-10)
+        sparsities.append(sparsity)
+    
+    axes[1, 1].plot(beta_values, sparsities, 'g-o', linewidth=2, markersize=8)
+    axes[1, 1].set_xlabel('Beta (Inverse Temperature)', fontsize=10)
+    axes[1, 1].set_ylabel('Attention Sparsity', fontsize=10)
+    axes[1, 1].set_title('Sparsity vs Beta', fontsize=11, fontweight='bold')
+    axes[1, 1].grid(True, alpha=0.3)
+    
+    fig.suptitle('Phase-3: Memory Capacity & Pattern Separation\n(Exponential Storage Capacity)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    return fig
+
+
 def main():
     """Generate all visualizations."""
     print("Generating SRGI Phase Visualizations...")
@@ -447,6 +875,22 @@ def main():
     fig6.savefig(f"{output_dir}/phase3_hopfield_attractors.png", dpi=150, bbox_inches='tight')
     print(f"  ✓ Saved: {output_dir}/phase3_hopfield_attractors.png")
     
+    fig7 = plot_phase3_iterative_convergence()
+    fig7.savefig(f"{output_dir}/phase3_iterative_convergence.png", dpi=150, bbox_inches='tight')
+    print(f"  ✓ Saved: {output_dir}/phase3_iterative_convergence.png")
+    
+    fig8 = plot_phase3_associative_recall()
+    fig8.savefig(f"{output_dir}/phase3_associative_recall.png", dpi=150, bbox_inches='tight')
+    print(f"  ✓ Saved: {output_dir}/phase3_associative_recall.png")
+    
+    fig9 = plot_phase3_denoising()
+    fig9.savefig(f"{output_dir}/phase3_denoising.png", dpi=150, bbox_inches='tight')
+    print(f"  ✓ Saved: {output_dir}/phase3_denoising.png")
+    
+    fig10 = plot_phase3_memory_capacity()
+    fig10.savefig(f"{output_dir}/phase3_memory_capacity.png", dpi=150, bbox_inches='tight')
+    print(f"  ✓ Saved: {output_dir}/phase3_memory_capacity.png")
+    
     print("\n" + "=" * 60)
     print("✅ All visualizations generated successfully!")
     print(f"📁 Output directory: {output_dir}/")
@@ -457,6 +901,10 @@ def main():
     print("  - phase2_spinor_embeddings.png")
     print("  - phase2_geometric_manifolds.png")
     print("  - phase3_hopfield_attractors.png")
+    print("  - phase3_iterative_convergence.png")
+    print("  - phase3_associative_recall.png")
+    print("  - phase3_denoising.png")
+    print("  - phase3_memory_capacity.png")
 
 
 if __name__ == "__main__":
