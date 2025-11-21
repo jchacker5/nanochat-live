@@ -19,6 +19,14 @@ from .voice_output import (
     speak_text as speak_text_wrapper
 )
 
+from .capture import (
+    WebcamCapture,
+    AudioCapture,
+    MultimodalCapture,
+    get_multimodal_capture,
+    capture_demo
+)
+
 __all__ = [
     # TTS
     "SpeechSynthesizer",
@@ -32,4 +40,11 @@ __all__ = [
     "VoiceOutput",
     "get_voice_output",
     "speak_text_wrapper",
+
+    # Multimodal Capture
+    "WebcamCapture",
+    "AudioCapture",
+    "MultimodalCapture",
+    "get_multimodal_capture",
+    "capture_demo",
 ]

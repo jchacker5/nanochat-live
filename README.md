@@ -319,6 +319,10 @@ python scripts/base_train.py --autonomous_mode=True --curiosity_threshold=0.1
 
 **What happens**: The model stops being reactive and starts generating its own goals. It autonomously explores, asks questions nobody prompted, discovers concepts, and consolidates insights into stable attractors—exactly like biological intelligence.
 
+## 📋 Complete Architecture Diagram
+
+See [`ARCHITECTURE_DIAGRAM.md`](ARCHITECTURE_DIAGRAM.md) for the exact end-to-end data flow from input → reasoning → multimodal output (text + native spoken voice).
+
 ## 🎭 Complete Multimodal Capabilities
 
 ### Input Capabilities (All Supported)

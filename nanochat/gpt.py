@@ -213,6 +213,11 @@ class GPT(nn.Module):
             ]),
         })
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+
+        # Multimodal output heads (parallel generation)
+        from nanochat.image_generator import MultimodalOutputHeads
+        self.multimodal_heads = MultimodalOutputHeads(config)
+
         # To support meta device initialization, we init the rotary embeddings here, but it's fake
         # As for rotary_seq_len, these rotary embeddings are pretty small/cheap in memory,
         # so let's just over-compute them, but assert fail if we ever reach that amount.
@@ -375,6 +380,49 @@ class GPT(nn.Module):
             logits = self.lm_head(x)
             logits = softcap * torch.tanh(logits / softcap) # logits softcap
             return logits
+
+    def generate_multimodal(
+        self,
+        tokens,
+        max_tokens=256,
+        temperature=1.0,
+        top_k=None,
+        generate_images=False,
+        generate_video=False,
+        image_prompt=None,
+        video_prompt=None,
+        seed=42
+    ):
+        """
+        Generate with multimodal outputs (text + images + video + speech).
+
+        This implements the parallel output heads from the architecture diagram.
+        """
+        # First generate text tokens normally
+        text_logits = self.generate(tokens, max_tokens, temperature, top_k, seed)
+
+        # Get the final hidden state for multimodal generation
+        # (This is a simplified version - in practice you'd want to run inference again
+        #  or cache intermediate states)
+        with torch.no_grad():
+            # Run forward pass to get hidden state
+            hidden_state = self.forward(tokens, multimodal_tokens=None)  # Get final hidden state
+
+            # Use multimodal output heads
+            multimodal_outputs = self.multimodal_heads(
+                hidden_state=hidden_state,
+                generate_images=generate_images,
+                generate_video=generate_video,
+                image_prompt=image_prompt,
+                video_prompt=video_prompt
+            )
+
+        return {
+            'text_logits': text_logits,
+            'images': multimodal_outputs.get('images'),
+            'video_path': multimodal_outputs.get('video_path'),
+            'hidden_state': hidden_state
+        }
 
     @torch.inference_mode()
     def generate(self, tokens, max_tokens, temperature=1.0, top_k=None, seed=42):
