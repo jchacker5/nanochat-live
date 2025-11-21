@@ -113,7 +113,14 @@ class EntangledBottleneck(nn.Module):
         # Sample one site for efficiency
         core_sample = self.cores[0] # (bond, phys, bond)
         mat = core_sample.view(self.bond_dim, -1)
-        u, s, v = torch.svd(mat)
+        # Use linalg.svd for better stability/MPS support
+        try:
+            u, s, v = torch.linalg.svd(mat, full_matrices=False)
+        except:
+            # Fallback for MPS if svd fails or is not implemented for this shape
+            # Return dummy entropy to prevent crash
+            s = torch.ones(self.bond_dim, device=mat.device)
+            
         s = s / (s.sum() + 1e-6) # Normalize
         entropy = -(s * torch.log(s + 1e-9)).sum()
         

@@ -39,6 +39,10 @@ pyttsx3>=2.90  # Offline TTS engine
 torchaudio>=2.0.0  # PyTorch audio processing
 soundfile>=0.12.0  # Audio file I/O
 
+# Mac/Apple Silicon Acceleration
+mlx>=0.15.0
+mlx_lm>=0.12.0
+transformers
+
 # Development tools
 maturin>=1.9.4  # For building rustbpe
-

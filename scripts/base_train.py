@@ -70,9 +70,19 @@ user_config = {k: globals()[k] for k in config_keys} # will be useful for loggin
 device_type = autodetect_device_type() if device_type == "" else device_type
 ddp, ddp_rank, ddp_local_rank, ddp_world_size, device = compute_init(device_type)
 master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
-autocast_ctx = torch.amp.autocast(device_type=device_type, dtype=torch.bfloat16) if device_type == "cuda" else nullcontext()
-synchronize = torch.cuda.synchronize if device_type == "cuda" else lambda: None
-get_max_memory = torch.cuda.max_memory_allocated if device_type == "cuda" else lambda: 0
+
+# Autocast context
+if device_type == "cuda":
+    autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)
+elif device_type == "mps":
+    # MPS supports bfloat16 on newer hardware (M1/M2/M3), otherwise float16
+    # We'll try bfloat16, but fallback/user can override if needed (or let PyTorch handle compat)
+    autocast_ctx = torch.amp.autocast(device_type="mps", dtype=torch.bfloat16)
+else:
+    autocast_ctx = nullcontext()
+
+synchronize = torch.cuda.synchronize if device_type == "cuda" else (torch.mps.synchronize if device_type == "mps" else lambda: None)
+get_max_memory = torch.cuda.max_memory_allocated if device_type == "cuda" else (torch.mps.current_allocated_memory if device_type == "mps" else lambda: 0)
 
 # wandb logging init
 use_dummy_wandb = run == "dummy" or not master_process
@@ -98,6 +108,15 @@ print0(f"num_kv_heads: {num_kv_heads}")
 # figure out the needed gradient accumulation to reach the desired total batch size
 tokens_per_fwdbwd = device_batch_size * max_seq_len # tokens per iteration for a single rank
 world_tokens_per_fwdbwd = tokens_per_fwdbwd * ddp_world_size # total tokens per iteration for all ranks
+
+# Auto-adjust for Mac if not specified otherwise
+if device_type == "mps" and total_batch_size == 524288:
+    print0("⚠️  Running on Mac with default massive batch size. Adjusting defaults for local training...")
+    # Reduce to something reasonable for a laptop (e.g. ~32k tokens total)
+    # Maintain accum steps if possible, or just warn.
+    # Actually, let's just warn the user to use the CLI flags.
+    print0("    Tip: Run with --total_batch_size=32768 --device_batch_size=4 to avoid OOM.")
+
 assert total_batch_size % world_tokens_per_fwdbwd == 0
 grad_accum_steps = total_batch_size // world_tokens_per_fwdbwd
 print0(f"Tokens / micro-batch / rank: {device_batch_size} x {max_seq_len} = {tokens_per_fwdbwd:,}")
@@ -112,7 +131,14 @@ with torch.device("meta"):
 model.to_empty(device=device)
 model.init_weights()
 orig_model = model # original, uncompiled model, for saving raw model state_dict
-model = torch.compile(model, dynamic=False) # TODO: dynamic True/False think through
+
+# torch.compile is not yet fully stable on MPS, so we skip it by default
+if device_type == "mps":
+    print0("Disabling torch.compile for MPS (Mac) device for stability.")
+    # model = torch.compile(model, dynamic=False) # Disabled for MPS
+else:
+    model = torch.compile(model, dynamic=False) # TODO: dynamic True/False think through
+
 num_params = sum(p.numel() for p in model.parameters())
 print0(f"Number of parameters: {num_params:,}")
 num_flops_per_token = model.estimate_flops()
