@@ -172,6 +172,69 @@ The SRGI approach preemptively implements mechanisms that were later validated i
 
 This makes SRGI not just an engineering improvement, but a more biologically plausible architecture.
 
+## Historical Context: World Models
+
+The concept of neural networks that predict sensory inputs and build internal world models has deep roots in AI history. A particularly prescient early work is:
+
+**Schmidhuber, J. (1990). "Making the world differentiable: On using fully recurrent self-supervised neural networks for dynamic reinforcement learning and planning in non-stationary environments."** Technical Report FKI-126-90, TUM.
+
+This 1990 paper introduced the concept of **recurrent neural "world models"** that:
+- Predict all sensory inputs including raw pixels
+- Model multi-dimensional reward signals and pain signals
+- Enable planning in non-stationary environments through differentiable predictions
+- Use fully recurrent self-supervised architectures
+
+### Relevance to NanoChat-Live and SRGI
+
+The world models concept is directly relevant to this work in several ways:
+
+1. **Multimodal Prediction**: NanoChat-Live's vision/audio streaming capabilities (via webcam/mic in live mode) echo Schmidhuber's pixel-level prediction approach. Modern multimodal agents still predict sensory streams, just with Transformers instead of RNNs.
+
+2. **Self-Supervised Learning**: The base pre-training (predicting next tokens) is a form of self-supervised world modeling—building compressed representations of data distributions.
+
+3. **Reward Modeling**: The RL training phase (`chat_rl.py`) involves learning to predict reward signals, exactly as proposed in 1990 for differentiable planning.
+
+4. **Recurrent State**: While Transformers use attention rather than explicit recurrence, SRGI's **resonant SSM layers** reintroduce recurrent dynamics (state-space models) for persistent memory—returning to principles from the 1990 work but with modern parameterizations.
+
+5. **Planning & Reasoning**: The latent chain-of-thought (CoT) reasoning in Transformer hidden states serves a similar function to the world model's planning: simulate future states before committing to actions/outputs.
+
+### From 1990 RNNs to 2025 Transformers
+
+The evolution from Schmidhuber's 1990 vision to today:
+
+| Aspect | 1990 World Models | 2025 SRGI/NanoChat-Live |
+|--------|------------------|-------------------------|
+| **Architecture** | Fully recurrent networks | Transformer + SSM hybrid |
+| **Sensory Input** | Raw pixels via RNN cells | Vision encoder (VDE) → latents |
+| **Memory** | Recurrent hidden state | KV cache + resonant SSM |
+| **Prediction** | Next pixel/reward | Next token/latent/action |
+| **Planning** | Rollouts in world model | Implicit CoT in hiddens |
+| **Scale** | Small (1990 compute) | 350M-1.9B params |
+
+### Key Insight
+
+Schmidhuber's 1990 insight—that **differentiable predictive models of the world enable both learning and planning**—remains foundational. Modern work (including SRGI) can be seen as:
+- Scaling up the compute (GPUs, billions of params)
+- Replacing RNN recurrence with attention + selective SSMs
+- Adding geometric/phase structure for stability
+- But preserving the core idea: **learn to predict, then use predictions to act**
+
+The 2015 slide you referenced shows how prescient this work was. Concepts like:
+- Pixel-level prediction (now: vision-language models)
+- Multi-dimensional reward modeling (now: RLHF, constitutional AI)
+- Non-stationary environments (now: continual learning, online RL)
+
+...were all articulated before modern deep learning took off.
+
+### Follow-up Work
+
+For comprehensive coverage of world models and their evolution, see:
+- **Overview**: "1990 - Planning & Reinforcement Learning with Recurrent World Models and Artificial Curiosity" at https://people.idsia.ch/~juergen/worldmodels.html
+- Modern instantiations: Ha & Schmidhuber (2018) "World Models", Hafner et al. (2019+) "DreamerV1/V2/V3"
+- Connection to LLMs: Brown et al. (2020) GPT-3 (large-scale next-token prediction as implicit world modeling)
+
+**Implication for SRGI**: By combining Transformer predictive power with recurrent SSM memory (à la 1990 RNNs) and geometric structure, SRGI bridges historical world model insights with modern scale and architecture.
+
 ## Conclusion
 
 SRGI represents a shift from "scale over structure" (original Transformer stacking) to "structure over scale" (strategic inductive biases). For tasks requiring:
@@ -192,10 +255,17 @@ SRGI provides significant improvements at modest computational cost. For simple,
 
 ## References
 
-- Original NanoChat: https://github.com/karpathy/nanochat
+### Primary Sources
+- **Original NanoChat**: https://github.com/karpathy/nanochat
+- **Schmidhuber, J. (1990)**: "Making the world differentiable: On using fully recurrent self-supervised neural networks for dynamic reinforcement learning and planning in non-stationary environments." Technical Report FKI-126-90, TUM. https://people.idsia.ch/~juergen/FKI-126-90.pdf
+- **World Models Overview**: https://people.idsia.ch/~juergen/worldmodels.html
+
+### Related Work
 - SRGI Concept: User's research on physics/neuroscience-inspired LLM architectures
 - Neuroscience Connections: 2025 papers on cortical oscillations, phase-locking, and attractor networks
 - Benchmark Sources: TruthfulQA, HotpotQA, NIAH protocol
+- Ha & Schmidhuber (2018): "World Models" - Modern neural world models for vision-based RL
+- Hafner et al. (2019-2023): DreamerV1/V2/V3 - State-of-the-art model-based RL with learned world models
 
 ---
 
