@@ -836,6 +836,25 @@ class PhaseAwareAttention(nn.Module):
         return self.c_proj(y)
 ```
 
+**Implementation and Validation**: Phase-Aware Attention has been implemented and tested, including the commutativity loss extension. Test results:
+
+- **PhaseAwareAttention basic forward**: ✅ PASSED
+  - Standard attention with phase coherence gating working
+  - RoPE integration verified
+  - Test: `test_phase_aware_attention` (from `tests/test_phase_attention.py`)
+  
+- **PhaseAwareAttention with commutativity loss**: ✅ PASSED
+  - Computes ||δd - dδ|| to enforce commutativity
+  - Returns scalar commutativity loss for training
+  - Test: `test_phase_attention_commutativity` (from `tests/test_cech_derham.py`, 2.04s)
+  
+- **PhaseAwareAttention GQA support**: ✅ PASSED
+  - Grouped query attention working correctly
+  - Value duplication for query heads verified
+  - Test: `test_phase_aware_attention_gqa` (from `tests/test_phase_attention.py`)
+
+**Test Suite**: Comprehensive test suite validates phase-aware attention implementation. All tests pass, confirming correct implementation of phase coherence gating and commutativity constraints.
+
 ### 4.5 Geometric Bottleneck (GB)
 
 Hyperbolic and toroidal latent spaces [8, 10, 11]. See Figure 6 for visualization of Poincaré disk (hyperbolic) and torus (toroidal) manifolds.
