@@ -50,10 +50,10 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
 | Brain Mechanism (Nov 2025 Papers) | SRGI Component (This Repo) | Status |
 |-----------------------------------|----------------------------|--------|
 | PV interneurons → 40 Hz gamma stability | `StableResonantSSM` (damped oscillators) | ✅ **Done** |
-| Gamma phase-locking for coherence | `PhaseAwareAttention` (1 + β cos(Δφ)) | 🚧 Phase-2 |
-| Rotating cortical standing waves | Hyperbolic + Toroidal geometric bottlenecks | 🚧 Phase-2 |
+| Gamma phase-locking for coherence | `PhaseAwareAttention` (1 + β cos(Δφ)) | ✅ **Phase-2** |
+| Rotating cortical standing waves | Hyperbolic + Toroidal geometric bottlenecks | ✅ **Phase-2** |
 | Wave attractors = perceptual clarity | Complex Modern Hopfield attractor memory | 🚧 Phase-3 |
-| Spinor-like orientation invariance | Quaternion/complex spinor embeddings | 🚧 Phase-2 |
+| Spinor-like orientation invariance | Quaternion/complex spinor embeddings | ✅ **Phase-2** |
 
 ---
 
@@ -89,11 +89,12 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
 - **Demo**: `scripts/ssm_demo.py` with training loop verification
 - **Verification**: All mathematical checks passed (see `VERIFICATION.md`)
 
-### 🚧 Phase-2: Phase-Aware Dynamics (IN PROGRESS)
-- Phase-Aware Attention (PAA) layer
-- Spinor/quaternion embeddings
-- Hyperbolic + toroidal geometric bottlenecks
-- Integration with multimodal live streaming
+### ✅ Phase-2: Phase-Aware Dynamics (COMPLETE)
+- **Phase-Aware Attention (PAA)** layer (`nanochat/phase_attention.py`)
+- **Spinor embeddings** (`nanochat/spinor_embeddings.py`)
+- **Hyperbolic + toroidal geometric bottlenecks** (`nanochat/geometric_bottleneck.py`)
+- Unit tests for all components
+- Ready for integration with transformer blocks
 
 ### 📋 Phase-3: Attractor Memory (PLANNED)
 - Modern Hopfield networks for stable memory states

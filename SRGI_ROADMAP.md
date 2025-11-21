@@ -39,11 +39,18 @@ Input → Spinor Embeddings → [Resonant SSM + Phase-Aware Attention + Geometri
 - ✅ Gradient-friendly (spectral constraints)
 - ✅ Interpretable (phase/magnitude extraction)
 
-**Implementation Status**: Done
+**Implementation Status**: ✅ Done
 - File: `nanochat/ssm.py`
 - Classes: `StableResonantSSM`, `ResonantBlock`
 - Demo: `scripts/ssm_demo.py`
 - Verification: All checks passed
+
+**Phase-2 Implementation Status**: ✅ Complete
+- File: `nanochat/phase_attention.py`
+- File: `nanochat/spinor_embeddings.py`
+- File: `nanochat/geometric_bottleneck.py`
+- Classes: `PhaseAwareAttention`, `SpinorEmbedding`, `GeometricBottleneck`
+- Tests: `tests/test_phase_attention.py`, `tests/test_spinor_embeddings.py`, `tests/test_geometric_bottleneck.py`
 
 **Integration**:
 ```python
@@ -54,7 +61,7 @@ x = block(hidden_states)  # Parallel to attention
 
 ---
 
-## Phase-2: Phase-Aware Dynamics 🚧 IN PROGRESS
+## Phase-2: Phase-Aware Dynamics ✅ COMPLETE
 
 ### 2.1 Phase-Aware Attention (PAA)
 
@@ -575,9 +582,9 @@ loss_total = (
 | Phase | Component | ETA | Dependencies |
 |-------|-----------|-----|--------------|
 | ✅ Phase-1 | StableResonantSSM | Done | PyTorch |
-| 🚧 Phase-2 | PhaseAwareAttention | Week 1-2 | Phase-1 |
-| 🚧 Phase-2 | SpinorEmbeddings | Week 1-2 | None |
-| 🚧 Phase-2 | Geometric Bottlenecks | Week 2-3 | geoopt |
+| ✅ Phase-2 | PhaseAwareAttention | Done | Phase-1 |
+| ✅ Phase-2 | SpinorEmbeddings | Done | None |
+| ✅ Phase-2 | Geometric Bottlenecks | Done | geoopt (optional) |
 | 📋 Phase-3 | Hopfield Memory | Week 3-4 | Phase-2 |
 | 📋 Phase-3 | Full Integration | Week 4-5 | All above |
 | 📋 Phase-3 | Benchmark Suite | Week 5-6 | Full model |
@@ -588,9 +595,9 @@ loss_total = (
 
 ### Unit Tests
 
-- [ ] `test_phase_aware_attention.py` — Phase coherence gating
-- [ ] `test_spinor_embeddings.py` — Unitary operations
-- [ ] `test_geometric_bottleneck.py` — Manifold constraints
+- [x] `test_phase_aware_attention.py` — Phase coherence gating ✅
+- [x] `test_spinor_embeddings.py` — Unitary operations ✅
+- [x] `test_geometric_bottleneck.py` — Manifold constraints ✅
 - [ ] `test_hopfield_memory.py` — Attractor convergence
 
 ### Integration Tests
