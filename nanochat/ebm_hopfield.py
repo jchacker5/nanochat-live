@@ -68,10 +68,33 @@ class EBMHopfieldMemory(ModernHopfieldMemory):
             self._init_thrml_model()
     
     def _init_thrml_model(self):
-        """Initialize THRML model for block Gibbs sampling."""
-        # Note: This is a placeholder - actual THRML API may differ
-        # Adjust based on actual THRML documentation when available
-        pass
+        """
+        Initialize THRML model for block Gibbs sampling.
+        
+        Note: This is a placeholder implementation. The actual THRML API may differ.
+        When THRML is available, this should initialize an EBMGraph with the energy function.
+        Adjust based on actual THRML documentation when available.
+        
+        Expected THRML API (from paper):
+            self.ebm = thrml.EBMGraph(
+                n_nodes=n_memories,
+                energy_fn=self.energy
+            )
+        """
+        # Placeholder: When THRML is available, initialize EBM graph
+        # For now, we'll use PyTorch fallback
+        self.thrml_available = False
+        if HAS_THRML:
+            try:
+                # Attempt to initialize THRML EBM graph
+                # Note: Actual API may differ - adjust when THRML docs are available
+                # self.ebm = thrml.EBMGraph(n_nodes=self.memory_size, energy_fn=self.energy)
+                self.thrml_available = False  # Set to True when THRML is properly initialized
+            except Exception as e:
+                # Fallback to PyTorch if THRML initialization fails
+                self.thrml_available = False
+                import warnings
+                warnings.warn(f"THRML initialization failed: {e}. Using PyTorch fallback.")
     
     def sample_thermal_noise(self, shape, device=None):
         """Sample thermal noise for thermodynamic sampling."""
@@ -117,24 +140,56 @@ class EBMHopfieldMemory(ModernHopfieldMemory):
         return torch.stack(samples)
     
     def forward(self, x: torch.Tensor, return_energy: bool = False, 
-                use_ebm_sampling: bool = True):
+                use_ebm_sampling: bool = True, n_steps: int = None):
         """
-        Forward pass with optional EBM sampling.
+        Forward pass with optional EBM sampling and THRML integration.
         
         Args:
             x: Input states of shape (batch, seq_len, n_embd)
             return_energy: If True, also return energy values
             use_ebm_sampling: Use EBM sampling if True, else use deterministic
+            n_steps: Number of sampling steps (default: self.n_steps)
         
         Returns:
             output: Retrieved memory states of shape (batch, seq_len, n_embd)
             energy_val (optional): Energy values of shape (batch, seq_len)
         """
+        if n_steps is None:
+            n_steps = self.n_steps
+            
         B, T, C = x.shape
         
         # Project to query space
         q = self.query(x)  # (B, T, n_embd)
         k = self.key(self.patterns)  # (memory_size, n_embd)
+        
+        # Try THRML block Gibbs sampling if available
+        if (use_ebm_sampling and self.use_thrml and self.thrml_available and 
+            hasattr(self, 'ebm') and self.sampling_method == 'block_gibbs'):
+            # THRML block Gibbs sampling (as described in paper)
+            outputs = []
+            energies = []
+            for b in range(B):
+                batch_outputs = []
+                batch_energies = []
+                for t in range(T):
+                    z = q[b, t]  # (n_embd,)
+                    # THRML block Gibbs sampling
+                    samples = self.ebm.sample_block_gibbs(z, num_steps=n_steps)
+                    final_sample = samples[-1]  # Use last sample
+                    output = self._retrieve_from_sample(final_sample, k)
+                    batch_outputs.append(output)
+                    if return_energy:
+                        energy_val = self.energy(output.unsqueeze(0), self.patterns)
+                        batch_energies.append(energy_val.squeeze(0))
+                outputs.append(torch.stack(batch_outputs))
+                if return_energy:
+                    energies.append(torch.stack(batch_energies))
+            output = torch.stack(outputs)
+            if return_energy:
+                energy_val = torch.stack(energies)
+                return output, energy_val
+            return output
         
         if use_ebm_sampling and self.sampling_method in ['block_gibbs', 'gibbs']:
             # Use EBM sampling (block Gibbs or standard Gibbs)
@@ -200,6 +255,22 @@ class EBMHopfieldMemory(ModernHopfieldMemory):
         else:
             # Fallback to standard deterministic iterative updates
             return super().forward(x, return_energy=return_energy)
+    
+    def _retrieve_from_sample(self, sample: torch.Tensor, k: torch.Tensor) -> torch.Tensor:
+        """
+        Retrieve memory pattern from sampled query state.
+        
+        Args:
+            sample: Sampled query state (n_embd,)
+            k: Key projections (memory_size, n_embd)
+        
+        Returns:
+            Retrieved pattern (n_embd,)
+        """
+        sim = (sample @ k.T) * self.beta
+        attn = F.softmax(sim / self.temperature, dim=-1)
+        retrieved = attn @ self.patterns
+        return retrieved
     
     def sample_negative(self, positive_samples, n_negative_steps=5):
         """

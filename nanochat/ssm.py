@@ -86,7 +86,7 @@ class StableResonantSSM(nn.Module):
 
     def forward(self, u):
         """
-        Forward pass through the resonant state-space layer.
+        Forward pass through the resonant state-space layer with complex extension.
 
         Implements the bilinear discretization:
             A_d = (I - dt/2 * A)^{-1} (I + dt/2 * A)
@@ -94,14 +94,30 @@ class StableResonantSSM(nn.Module):
 
         Then evolves the state:
             h[t+1] = A_d @ h[t] + B_d @ u[t]
-            y[t] = Re(C @ h[t])
+            y[t] = C @ h[t] (complex output)
+
+        Supports both real and complex inputs:
+        - Real input: (batch, seq_len, input_dim) -> real output
+        - Complex input: (batch, seq_len, input_dim, 2) [real, imag] -> complex output
 
         Args:
-            u: Input sequence of shape (batch, seq_len, input_dim)
+            u: Input sequence of shape (batch, seq_len, input_dim) or (batch, seq_len, input_dim, 2)
 
         Returns:
-            Output sequence of shape (batch, seq_len, input_dim)
+            Output sequence of shape (batch, seq_len, input_dim) or (batch, seq_len, input_dim, 2)
         """
+        # Check if input is complex (has last dimension of size 2)
+        is_complex = u.dim() == 4 and u.shape[-1] == 2
+        
+        if is_complex:
+            # Complex input: (B, T, n_embd, 2) [real, imag]
+            return self._forward_complex(u)
+        else:
+            # Real input: (B, T, n_embd)
+            return self._forward_real(u)
+    
+    def _forward_real(self, u):
+        """Forward pass for real-valued inputs (backward compatibility)."""
         batch, seq_len, _ = u.shape
         device = u.device
         self.dt = self.dt.to(device)
@@ -116,32 +132,82 @@ class StableResonantSSM(nn.Module):
         A = torch.diag_embed(torch.complex(self.A_real, self.A_imag))
 
         # Bilinear discretization for numerical stability
-        # This maps continuous-time dynamics to discrete-time while preserving
-        # stability properties (unlike naive Euler discretization)
         I = torch.eye(self.state_dim, device=device, dtype=torch.complex64)
-
-        # Discretized state transition matrix (unitary-like)
         A_disc = torch.linalg.solve(I - (dt / 2) * A, I + (dt / 2) * A)
-
-        # Discretized input matrix
         B_disc = torch.linalg.solve(
             I - (dt / 2) * A,
             torch.sqrt(dt) * self.B.to(torch.complex64)
         )
 
         # Process sequence step-by-step
-        # TODO: Optimize with parallel scan for O(log T) instead of O(T)
         for t in range(seq_len):
-            # State update: h[t+1] = A_d @ h[t] + B_d @ u[t]
             h = (A_disc @ h.unsqueeze(-1)).squeeze(-1)
             h = h + (B_disc @ u[:, t, :].unsqueeze(-1).to(torch.complex64)).squeeze(-1)
-
-            # Output: y[t] = Re(C @ h[t])
-            # We take the real part to get real-valued outputs
             y = (self.C.to(torch.complex64) @ h.unsqueeze(-1)).real.squeeze(-1)
             outputs.append(y)
 
         return torch.stack(outputs, dim=1)  # (batch, seq_len, input_dim)
+    
+    def _forward_complex(self, x):
+        """
+        Forward pass with complex extension as described in paper.
+        
+        Args:
+            x: (B, T, n_embd, 2) complex input [real, imag]
+        
+        Returns:
+            (B, T, n_embd, 2) with resonant evolution
+        """
+        B, T, n_embd, _ = x.shape
+        device = x.device
+        self.dt = self.dt.to(device)
+        
+        # Extract real and imaginary parts
+        x_real = x[..., 0]  # (B, T, n_embd)
+        x_imag = x[..., 1]  # (B, T, n_embd)
+        
+        # Project to state space (complex extension)
+        u_real = self.B(x_real)  # (B, T, n_state)
+        u_imag = self.B(x_imag)  # (B, T, n_state)
+        u_complex = u_real + 1j * u_imag  # Complex state
+        
+        # Initialize complex state to zeros
+        h = torch.zeros(B, self.state_dim, dtype=torch.complex64, device=device)
+        
+        outputs_real = []
+        outputs_imag = []
+        dt = self.dt
+        
+        # Build complex diagonal state matrix A
+        A = torch.diag_embed(torch.complex(self.A_real, self.A_imag))
+        
+        # Bilinear discretization
+        I = torch.eye(self.state_dim, device=device, dtype=torch.complex64)
+        A_disc = torch.linalg.solve(I - (dt / 2) * A, I + (dt / 2) * A)
+        B_disc = torch.linalg.solve(
+            I - (dt / 2) * A,
+            torch.sqrt(dt) * self.B.to(torch.complex64)
+        )
+        
+        # Process sequence step-by-step
+        for t in range(T):
+            # State update: h[t+1] = A_d @ h[t] + B_d @ u[t]
+            h = (A_disc @ h.unsqueeze(-1)).squeeze(-1)
+            u_t_complex = u_complex[:, t, :].to(torch.complex64)
+            h = h + (B_disc @ u_t_complex.unsqueeze(-1)).squeeze(-1)
+            
+            # Project back to embedding space (separate real/imag)
+            y_complex = self.C.to(torch.complex64) @ h.unsqueeze(-1)
+            y_real = y_complex.real.squeeze(-1)
+            y_imag = y_complex.imag.squeeze(-1)
+            
+            outputs_real.append(y_real)
+            outputs_imag.append(y_imag)
+        
+        out_real = torch.stack(outputs_real, dim=1)  # (B, T, n_embd)
+        out_imag = torch.stack(outputs_imag, dim=1)  # (B, T, n_embd)
+        
+        return torch.stack([out_real, out_imag], dim=-1)  # (B, T, n_embd, 2)
 
     def get_phase_info(self, u):
         """
