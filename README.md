@@ -4,6 +4,8 @@
 
 > **The world's first open-source LLM that thinks with geometry, resonance, and phase dynamics — exactly like the cortex does.**
 
+**📊 [View Visualizations](visualizations/)** | **📄 [Read Full Paper](srgi_complete_draft.md)**
+
 ## 🎭 Why SRGI Works: A Meme That Explains Everything
 
 ![Information-geometric decoding in SRGI](IMG_8152.png)
@@ -88,6 +90,7 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
   - Phase extraction utilities for visualization
 - **Demo**: `scripts/ssm_demo.py` with training loop verification
 - **Verification**: All mathematical checks passed (see `VERIFICATION.md`)
+- **Visualizations**: See `visualizations/phase1_eigenvalues.png` and `visualizations/phase1_state_evolution.png`
 
 ### ✅ Phase-2: Phase-Aware Dynamics (COMPLETE)
 - **Phase-Aware Attention (PAA)** layer (`nanochat/phase_attention.py`)
@@ -95,12 +98,17 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
 - **Hyperbolic + toroidal geometric bottlenecks** (`nanochat/geometric_bottleneck.py`)
 - Unit tests for all components
 - Ready for integration with transformer blocks
+- **Visualizations**: 
+  - `visualizations/phase2_attention_patterns.png` - Phase-aware attention comparison
+  - `visualizations/phase2_spinor_embeddings.png` - Complex embedding space
+  - `visualizations/phase2_geometric_manifolds.png` - Hyperbolic and toroidal manifolds
 
 ### 📋 Phase-3: Attractor Memory (PLANNED)
 - Modern Hopfield networks for stable memory states
 - Phase-consistency regularization losses
 - Full 128k context training
 - Long-range benchmark suite (NIAH, coref, reasoning)
+- **Visualization**: `visualizations/phase3_hopfield_attractors.png` - Energy landscape and convergence dynamics
 
 ---
 

@@ -86,6 +86,18 @@ where $f$ is the log-probability function, $\exp_p^{\nabla}$ is the exponential 
 
 **Figure 1:** 2nd-order Taylor expansion on a Riemannian manifold. The expansion decomposes the function value at $\exp_p^{\nabla}(v)$ into: (1) the base value $f(p)$, (2) the first-order directional derivative $\langle \text{grad } f, v \rangle_p$, and (3) the second-order curvature correction $\frac{1}{2} \text{Hess } f_{\gamma(t^*)}(\dot{\gamma}, \dot{\gamma})$ evaluated at an intermediate point $t^* \in (0,1)$ along the geodesic $\gamma$.
 
+**Figure 2:** Phase-1 Resonant SSM eigenvalue distribution (see `visualizations/phase1_eigenvalues.png`). Eigenvalues cluster near the imaginary axis with small negative real parts (damping), demonstrating the lightly damped oscillator dynamics that preserve information while maintaining stability. The unit circle reference and damping region highlight the spectral constraints that enable long-range memory.
+
+**Figure 3:** Phase-1 state evolution over time (see `visualizations/phase1_state_evolution.png`). Multiple resonant frequencies (0.5, 1.0, 2.0, 4.0 Hz) with damping demonstrate stable oscillations. The phase portrait shows spiral convergence to the origin, illustrating how resonant dynamics preserve information through phase-coherent trajectories.
+
+**Figure 4:** Phase-2 phase-aware attention patterns (see `visualizations/phase2_attention_patterns.png`). Comparison of standard attention vs. phase-aware attention with coherence modulation $1 + \beta \cos(\Delta\phi)$. The visualization shows how phase-aligned tokens receive higher attention weights, implementing communication-through-coherence as observed in cortical gamma oscillations.
+
+**Figure 5:** Phase-2 spinor embeddings in complex space (see `visualizations/phase2_spinor_embeddings.png`). Complex-valued embeddings with magnitude and phase distributions, demonstrating unitary rotation operations that preserve norm. The visualization shows how spinor representations enable orientation-invariant reasoning through group-equivariant transformations.
+
+**Figure 6:** Phase-2 geometric bottlenecks (see `visualizations/phase2_geometric_manifolds.png`). Hyperbolic space (Poincaré disk) for hierarchical structures and toroidal space (2D torus) for periodic patterns. The visualization demonstrates how geometric projections encode tree-like hierarchies and cyclic structures naturally, aligning with rotating cortical waves on curved manifolds.
+
+**Figure 7:** Phase-3 Hopfield attractor memory (see `visualizations/phase3_hopfield_attractors.png`). Energy landscape with attractor basins and convergence trajectories. The visualization shows how states converge to stable memory patterns, implementing wave attractors that provide perceptual clarity through energy minimization.
+
 **Direct translation into SRGI components:**
 
 | Term in Expansion | SRGI Component | Why This Matters |
@@ -253,11 +265,11 @@ Liang et al. (2025, TMLR accepted) propose IG-inspired sparse mixtures for multi
 
 ## 4. SRGI Architecture
 
-SRGI is a stacked, residual architecture compatible with existing Transformers. Each block adds three orthogonal biases:
+SRGI is a stacked, residual architecture compatible with existing Transformers. Each block adds three orthogonal biases. See Figures 2-7 for visualizations of each component's mathematical properties and dynamics.
 
 ### 4.1 Spinor Embeddings (SE)
 
-Replace real embeddings with complex/quaternion channels [14, 15].
+Replace real embeddings with complex/quaternion channels [14, 15]. See Figure 5 for visualization of complex embedding space and unitary operations.
 
 **Implementation** (based on NanoChat [1]):
 
@@ -562,7 +574,7 @@ class PhaseAwareAttention(nn.Module):
 
 ### 4.5 Geometric Bottleneck (GB)
 
-Hyperbolic and toroidal latent spaces [8, 10, 11].
+Hyperbolic and toroidal latent spaces [8, 10, 11]. See Figure 6 for visualization of Poincaré disk (hyperbolic) and torus (toroidal) manifolds.
 
 ```python
 class GeometricBottleneck(nn.Module):
@@ -634,7 +646,7 @@ class GeometricBottleneck(nn.Module):
 
 ### 4.6 Attractor Memory Head (AMH)
 
-Modern Hopfield network for stabilizing decoding [2].
+Modern Hopfield network for stabilizing decoding [2]. See Figure 7 for visualization of energy landscape and attractor convergence dynamics.
 
 ```python
 class AttractorMemoryHead(nn.Module):
@@ -924,14 +936,14 @@ where $\phi$ are phases from R-SSM slow band. This implements communication-thro
 For hyperbolic part, use Poincaré ball model $\mathbb{D}^d$ with curvature $c > 0$ [10]. Map Euclidean $v$ to $\mathbb{D}^d$ by:
 $$\exp_0^c(v) = \tanh\left(\frac{\sqrt{c}\|v\|}{2}\right) \frac{v}{\sqrt{c}\|v\|}$$
 
-Optimize with Riemannian Adam [11]. For toroidal part, maintain angles $\theta \in [0, 2\pi)^k$; sum and wrap mod $2\pi$.
+Optimize with Riemannian Adam [11]. For toroidal part, maintain angles $\theta \in [0, 2\pi)^k$; sum and wrap mod $2\pi$. See Figure 6 for visualization of both manifolds and their geometric properties.
 
 ### 5.5 Attractor Memory
 
 Modern Hopfield energy [2] over complex keys $K$ and state $z$:
 $$E(z) = -\log \sum_m \exp\big(\beta \cdot \text{Re}(z^\dagger K_m)\big)$$
 
-With 1-3 inner gradient steps $\nabla_z E$ between decoder logits. This pulls $z$ toward stored items, stabilizing outputs.
+With 1-3 inner gradient steps $\nabla_z E$ between decoder logits. This pulls $z$ toward stored items, stabilizing outputs. See Figure 7 for visualization of the energy landscape and convergence dynamics.
 
 **Information-geometric interpretation.** The attractor energy $E(z)$ is a complex-valued Bregman-type divergence on a dually flat space. The minimization under the dual connection ∇* (m-connection) implements the dual geodesic flow, pulling the state toward stored expectation parameters $\eta$ (the memory keys $K_m$) [34, 35].
 
