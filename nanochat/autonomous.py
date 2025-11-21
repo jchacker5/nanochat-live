@@ -12,7 +12,7 @@
 import torch
 import torch.nn as nn
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 
 
 class CuriosityEngine(nn.Module):
@@ -147,14 +147,22 @@ class AutonomousAgent:
     and memory consolidation.
     """
 
-    def __init__(self, model, config):
+    def __init__(self, model, config, tokenizer=None):
         self.model = model
         self.config = config
+        self.tokenizer = tokenizer
         self.curiosity = CuriosityEngine(config)
 
         # Autonomous operation settings (from config)
         self.nap_duration = getattr(config, 'nap_duration', 60)  # seconds to sleep when bored
         self.consolidation_interval = getattr(config, 'consolidation_interval', 3600)  # seconds between memory consolidation
+
+        # Lifelong learning (Phase-6)
+        self.lifelong_learner = None
+        if getattr(config, 'enable_lifelong', False):
+            from nanochat.lifelong import LifelongLearner
+            self.lifelong_learner = LifelongLearner(model, config, tokenizer)
+            print("🧠 Lifelong learning enabled - weights will evolve continuously!")
         self.last_consolidation = time.time()
 
     def run_autonomous_loop(self, webcam_stream=None, audio_stream=None):

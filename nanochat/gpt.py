@@ -52,6 +52,15 @@ class GPTConfig:
     nap_duration: int = 60  # Seconds to sleep when world is boring
     consolidation_interval: int = 3600  # Seconds between memory consolidation
 
+    # Lifelong learning extensions (Phase-6)
+    enable_lifelong: bool = False  # Enable true weight evolution
+    oga_lr: float = 5e-8  # Online gradient accumulation learning rate
+    oga_interval: int = 512  # Steps between OGA updates
+    dreamer_every: int = 256  # Steps between Dreamer imagination updates
+    replay_capacity: int = 100_000  # Experience replay buffer size
+    synthetic_data_every_hours: int = 12  # Hours between synthetic data generation
+    synthetic_batch_size: int = 256  # Batch size for synthetic training
+
 
 def norm(x):
     # Purely functional rmsnorm with no learnable params
