@@ -383,8 +383,14 @@ def get_tokenizer():
     from nanochat.common import get_base_dir
     base_dir = get_base_dir()
     tokenizer_dir = os.path.join(base_dir, "tokenizer")
-    # return HuggingFaceTokenizer.from_directory(tokenizer_dir)
-    return RustBPETokenizer.from_directory(tokenizer_dir)
+
+    # Try RustBPE first, fall back to HuggingFace if it fails
+    try:
+        return RustBPETokenizer.from_directory(tokenizer_dir)
+    except Exception as e:
+        print(f"RustBPE tokenizer failed: {e}")
+        print("Falling back to HuggingFace tokenizer...")
+        return HuggingFaceTokenizer.from_directory(tokenizer_dir)
 
 def get_token_bytes(device="cpu"):
     import torch
