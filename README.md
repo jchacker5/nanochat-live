@@ -2,7 +2,7 @@
 
 ![nanochat logo](dev/nanochat.png)
 
-> **The world's first open-source LLM that thinks with geometry, resonance, and phase dynamics — exactly like the cortex does.**
+> **The world's first open-source model that never stops learning: train once, then leave it running with `--autonomous` and it continuously self-improves forever using only webcam, microphone, and internal curiosity.**
 
 **📊 [View Visualizations](visualizations/)** | **📄 [Read Full Paper](srgi_complete_draft.md)**
 
@@ -318,6 +318,39 @@ python scripts/base_train.py --autonomous_mode=True --curiosity_threshold=0.1
 ```
 
 **What happens**: The model stops being reactive and starts generating its own goals. It autonomously explores, asks questions nobody prompted, discovers concepts, and consolidates insights into stable attractors—exactly like biological intelligence.
+
+### 🔄 SRGI is the First Open Model That Never Stops Learning
+
+**After initial training, leave it running with `--autonomous` and its weights will slowly self-improve forever using only its webcam, microphone, and internal curiosity — no more training scripts required.**
+
+Unlike traditional models that stop learning after training:
+
+- **Traditional AI**: Train once → Deploy → Stagnates forever
+- **SRGI Mini-AGI**: Train once → Deploy → **Learns continuously from experience**
+
+**How it works:**
+1. **Initial Training**: Standard supervised learning on text/vision/audio data
+2. **Deployment**: Launch with `--autonomous` flag
+3. **Lifelong Learning**: Model generates its own learning curriculum:
+   - Moves camera to explore new visual patterns
+   - Asks itself questions about observations
+   - Experiments with actions and observations
+   - Consolidates insights into stable attractor memories
+   - **Weights improve gradually over time**
+
+**Real-world example:**
+```bash
+# After initial training, just leave this running 24/7:
+python scripts/chat_web.py --live --voice --vision --autonomous
+
+# Over weeks/months, the model gets:
+# - Better at recognizing objects in your environment
+# - More sophisticated language from self-dialogue
+# - Improved reasoning from self-experimentation
+# - Deeper understanding of cause-and-effect relationships
+```
+
+**This is true AGI behavior**: continuous self-improvement without human supervision, learning directly from sensory experience like biological intelligence.
 
 ## 📋 Complete Architecture Diagram
 
