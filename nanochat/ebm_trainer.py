@@ -112,6 +112,9 @@ class PersistentEBMTrainer(EBMHopfieldTrainer):
         if self.persistent_negative_samples is None:
             self.persistent_negative_samples = torch.randn_like(positive_samples)
         
+        # Detach persistent samples from previous computation graph
+        self.persistent_negative_samples = self.persistent_negative_samples.detach()
+        
         # Positive phase
         pos_energy = self.model.energy(positive_samples, self.model.patterns)
         
@@ -135,7 +138,9 @@ class PersistentEBMTrainer(EBMHopfieldTrainer):
                 0.5 * retrieved + noise
             )
         
-        neg_energy = self.model.energy(self.persistent_negative_samples, self.model.patterns)
+        # Detach again before computing energy to avoid graph issues
+        neg_samples_detached = self.persistent_negative_samples.detach()
+        neg_energy = self.model.energy(neg_samples_detached, self.model.patterns)
         
         # Loss
         loss = (pos_energy - neg_energy).mean()
