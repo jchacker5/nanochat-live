@@ -349,7 +349,7 @@ class GeometricBottleneck(nn.Module):
 
 ---
 
-## Phase-3: Attractor Memory 📋 PLANNED
+## Phase-3: Attractor Memory ✅ COMPLETE
 
 ### Modern Hopfield Networks
 
@@ -361,7 +361,13 @@ class GeometricBottleneck(nn.Module):
 - Dense associative memory with exponential capacity
 - Energy minimization → convergence to stored patterns
 
-**Implementation Plan**:
+**Implementation Status**: ✅ Done
+- File: `nanochat/hopfield_memory.py`
+- Class: `ModernHopfieldMemory`
+- Tests: `tests/test_hopfield_memory.py`
+- Verification: All tests passed
+
+**Implementation**:
 
 ```python
 # File: nanochat/hopfield_memory.py
@@ -439,9 +445,10 @@ output = hidden_states + 0.3 * memory_state  # Residual blend
 ```
 
 **Testing**:
-- Associative recall tasks
-- Long-context memory retrieval
-- Hallucination reduction (attractor stability)
+- ✅ Unit tests: `test_hopfield_memory.py` — Attractor convergence, energy computation, gradient flow
+- 📋 Integration tests: Associative recall tasks (planned)
+- 📋 Long-context memory retrieval (planned)
+- 📋 Hallucination reduction (attractor stability) (planned)
 
 ---
 
@@ -585,7 +592,7 @@ loss_total = (
 | ✅ Phase-2 | PhaseAwareAttention | Done | Phase-1 |
 | ✅ Phase-2 | SpinorEmbeddings | Done | None |
 | ✅ Phase-2 | Geometric Bottlenecks | Done | geoopt (optional) |
-| 📋 Phase-3 | Hopfield Memory | Week 3-4 | Phase-2 |
+| ✅ Phase-3 | Hopfield Memory | Done | Phase-2 |
 | 📋 Phase-3 | Full Integration | Week 4-5 | All above |
 | 📋 Phase-3 | Benchmark Suite | Week 5-6 | Full model |
 
@@ -598,7 +605,7 @@ loss_total = (
 - [x] `test_phase_aware_attention.py` — Phase coherence gating ✅
 - [x] `test_spinor_embeddings.py` — Unitary operations ✅
 - [x] `test_geometric_bottleneck.py` — Manifold constraints ✅
-- [ ] `test_hopfield_memory.py` — Attractor convergence
+- [x] `test_hopfield_memory.py` — Attractor convergence ✅
 
 ### Integration Tests
 

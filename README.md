@@ -54,7 +54,7 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
 | PV interneurons → 40 Hz gamma stability | `StableResonantSSM` (damped oscillators) | ✅ **Done** |
 | Gamma phase-locking for coherence | `PhaseAwareAttention` (1 + β cos(Δφ)) | ✅ **Phase-2** |
 | Rotating cortical standing waves | Hyperbolic + Toroidal geometric bottlenecks | ✅ **Phase-2** |
-| Wave attractors = perceptual clarity | Complex Modern Hopfield attractor memory | 🚧 Phase-3 |
+| Wave attractors = perceptual clarity | Complex Modern Hopfield attractor memory | ✅ **Phase-3** |
 | Spinor-like orientation invariance | Quaternion/complex spinor embeddings | ✅ **Phase-2** |
 
 ---
@@ -103,12 +103,17 @@ This repo implements **Spin-Resonant Geometric Intelligence (SRGI)** — a compu
   - `visualizations/phase2_spinor_embeddings.png` - Complex embedding space
   - `visualizations/phase2_geometric_manifolds.png` - Hyperbolic and toroidal manifolds
 
-### 📋 Phase-3: Attractor Memory (PLANNED)
-- Modern Hopfield networks for stable memory states
-- Phase-consistency regularization losses
-- Full 128k context training
-- Long-range benchmark suite (NIAH, coref, reasoning)
+### ✅ Phase-3: Attractor Memory (COMPLETE)
+- **Modern Hopfield Memory** (`nanochat/hopfield_memory.py`)
+  - Dense associative memory with exponential capacity
+  - Iterative energy minimization for convergence to attractors
+  - Denoising: corrupted inputs converge to clean patterns
+  - Associative recall: partial cues retrieve full patterns
+- Unit tests: `tests/test_hopfield_memory.py`
 - **Visualization**: `visualizations/phase3_hopfield_attractors.png` - Energy landscape and convergence dynamics
+- 📋 Phase-consistency regularization losses (planned)
+- 📋 Full 128k context training (planned)
+- 📋 Long-range benchmark suite (NIAH, coref, reasoning) (planned)
 
 ---
 
