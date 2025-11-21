@@ -23,6 +23,7 @@ parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
 parser.add_argument('-v', '--voice', type=str, default=None, choices=['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], help='Enable voice output with specified ChatGPT-style voice')
 parser.add_argument('--tts-engine', type=str, default='gtts', choices=['gtts', 'pyttsx3'], help='TTS engine for voice output')
+parser.add_argument('--lifelong', action='store_true', help='Enable true lifelong learning (Phase-6) - weights evolve continuously')
 args = parser.parse_args()
 
 # Init the model and tokenizer

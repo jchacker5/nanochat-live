@@ -194,6 +194,19 @@ class AutonomousAgent:
                     # Execute action and get new state
                     new_state = self.curiosity.execute_action(action_idx)
 
+                    # Create experience record for lifelong learning
+                    experience = {
+                        'state': current_state,
+                        'action': action_idx.item(),
+                        'surprise': surprise.item(),
+                        'next_state': new_state,
+                        'timestamp': time.time()
+                    }
+
+                    # Lifelong learning step (if enabled)
+                    if self.lifelong_learner:
+                        self.lifelong_learner.step(experience)
+
                     # Store in episodic memory and potentially consolidate
                     self._store_episodic_memory(new_state)
 
