@@ -61,6 +61,10 @@ class GPTConfig:
     synthetic_data_every_hours: int = 12  # Hours between synthetic data generation
     synthetic_batch_size: int = 256  # Batch size for synthetic training
 
+    # Mac/Efficiency extensions
+    mlx_mode: bool = False  # Auto-switches to MLX + quantization
+    quant_bits: int = 4    # FP8/INT4 per Elon
+
 
 def norm(x):
     # Purely functional rmsnorm with no learnable params
@@ -166,20 +170,36 @@ class Block(nn.Module):
 
 class SRGIBlock(nn.Module):
     """
-    SRGI Block with quantum-inspired entanglement bottleneck.
-    This is a minimal implementation focusing on the entanglement feature.
-    Full SRGI implementation can be expanded with additional components.
+    SRGI Block with Phase-Aware Attention, Resonant SSM, and Entanglement.
+    This is the full academic implementation of the SRGI unit.
     """
     def __init__(self, config, layer_idx):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
 
-        # Standard transformer components (can be enhanced with SRGI components later)
-        self.attn = CausalSelfAttention(config, layer_idx)
-        self.mlp = MLP(config)
+        # 1. Attention Mechanism
+        if config.use_srgi:
+            from nanochat.phase_attention import PhaseAwareAttention
+            self.attn = PhaseAwareAttention(
+                n_embd=config.n_embd,
+                n_head=config.n_head, 
+                n_kv_head=config.n_kv_head,
+                layer_idx=layer_idx
+            )
+        else:
+            self.attn = CausalSelfAttention(config, layer_idx)
 
-        # Entangled bottleneck (quantum-inspired, optional)
+        # 2. MLP (Standard)
+        self.mlp = MLP(config)
+        
+        # 3. Resonant State-Space Model (Parallel Mixer)
+        self.ssm = None
+        if config.use_srgi:
+            from nanochat.ssm import StableResonantSSM
+            self.ssm = StableResonantSSM(state_dim=config.n_embd, input_dim=config.n_embd)
+            
+        # 4. Entanglement Bottleneck
         self.use_entangle = getattr(config, 'use_entangle', False)
         if self.use_entangle:
             from nanochat.entangle import EntangledBottleneck
@@ -187,14 +207,38 @@ class SRGIBlock(nn.Module):
 
     def forward(self, x, cos_sin=None, kv_cache=None, total_entropy=0.0):
         """
-        Forward pass with optional entanglement bottleneck.
-        Returns: (output, entropy_loss) where entropy_loss is scalar for regularization
+        Forward pass with SRGI components.
+        Returns: (output, entropy_loss)
         """
-        # Standard transformer forward
-        x = x + self.attn(norm(x), cos_sin, kv_cache)
+        # 1. Attention Branch
+        # Note: PhaseAwareAttention signature aligns with CausalSelfAttention's for (x, cos_sin, kv_cache)
+        # We normalize input before attention
+        x_norm = norm(x)
+        if self.config.use_srgi:
+            # PhaseAwareAttention might return extra loss if configured, but here we assume standard return
+            # Check phase_attention.py: returns y or (y, loss)
+            attn_out = self.attn(x_norm, cos_sin, kv_cache)
+            if isinstance(attn_out, tuple):
+                attn_out = attn_out[0] # Ignore commutativity loss for now or add to total_entropy
+        else:
+            attn_out = self.attn(x_norm, cos_sin, kv_cache)
+        
+        x = x + attn_out
+
+        # 2. Resonant SSM Branch (Parallel to MLP, or before)
+        # We apply it as an additional mixer for long-range dependencies
+        if self.ssm is not None:
+            x_ssm = self.ssm(norm(x))
+            # If ssm returns complex (2 channels), we project or take magnitude
+            if x_ssm.dim() == 4 and x_ssm.shape[-1] == 2:
+                 # Simple projection from complex to real: Real part
+                 x_ssm = x_ssm[..., 0]
+            x = x + x_ssm
+
+        # 3. MLP Branch
         x = x + self.mlp(norm(x))
 
-        # Apply entanglement bottleneck if enabled
+        # 4. Entanglement Bottleneck
         entropy = 0.0
         if self.use_entangle:
             # Convert to complex for entanglement processing

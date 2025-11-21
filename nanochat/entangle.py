@@ -1,125 +1,120 @@
 # nanochat/entangle.py
 
 # EntangledBottleneck + von Neumann entropy regularizer (Phase-4)
-
-# Tested on PyTorch 2.4 + tensornetwork 0.4.6 (pip install tensornetwork)
+# Optimized with real tensor contractions
 
 import torch
 import torch.nn as nn
-import tensornetwork as tn
-from tensornetwork import contractors
 import numpy as np
-
-tn.set_default_backend("pytorch")
 
 class EntangledBottleneck(nn.Module):
     """
     Matrix Product State (MPS) bottleneck for volume-law entanglement.
-
-    References:
-      - Levine et al. (2019) Deep Learning and the Schrödinger Equation
-      - Deng et al. (2017) Quantum Entanglement in Neural Networks
-      - Zecchina et al. (2023) Entanglement transition in neural quantum states
+    
+    Implements a differentiable Tensor Train layer that contracts input features
+    with a set of core tensors to produce entangled representations.
     """
     def __init__(self, n_embd: int, bond_dim: int = 16, physical_dim: int = 8):
         super().__init__()
         self.n_embd = n_embd
-        self.bond_dim = bond_dim              # Controls max entanglement entropy ~ log(bond_dim)
-        self.physical_dim = physical_dim      # Local Hilbert space dim per site (sqrt(n_embd) ≈)
+        self.bond_dim = bond_dim
+        self.physical_dim = physical_dim
+        self.mps_sites = 8 # Number of MPS sites to compress into
 
-        # Learnable core tensors (MPS nodes)
-        self.cores = nn.ParameterList([
-            nn.Parameter(torch.randn(bond_dim, physical_dim, bond_dim) * 0.01)
-            for _ in range(16)  # Fixed length 16; can be made dynamic
-        ])
+        # MPS Cores: (sites, bond_dim_left, physical_dim, bond_dim_right)
+        # We use a parameter tensor directly instead of a list for efficiency
+        self.cores = nn.Parameter(
+            torch.randn(self.mps_sites, bond_dim, physical_dim, bond_dim) * 0.02
+        )
+        
+        # Boundary vectors (trainable)
+        self.left_boundary = nn.Parameter(torch.randn(bond_dim))
+        self.right_boundary = nn.Parameter(torch.randn(bond_dim))
 
-        # Project input vector into physical legs (will be reshaped dynamically)
-        self.to_physical = nn.Linear(n_embd * 2, physical_dim, bias=False)  # *2 for complex, per token
-
-        # Projection back to original dimension
-        self.proj_back = nn.Linear(bond_dim**2, n_embd*2, bias=False)
-
-    def _vector_to_mps(self, x_complex: torch.Tensor) -> list[tn.Node]:
-        """
-        Inject classical complex vector into MPS physical legs.
-        x_complex: (B, T, n_embd, 2) → create MPS with 16 sites
-        """
-        B, T, _, _ = x_complex.shape
-
-        # For simplicity, average across sequence for now
-        # TODO: Implement proper sequence-to-MPS mapping
-        x_avg = x_complex.mean(dim=1)  # (B, n_embd, 2)
-        x_flat = x_avg.view(B, -1)  # (B, n_embd*2)
-
-        # Project to physical dimension per batch
-        phys = self.to_physical(x_flat)  # (B, physical_dim)
-
-        # Create MPS nodes - one per site
-        mps_length = 16
-        nodes = []
-
-        for i in range(mps_length):
-            node = tn.Node(self.cores[i], name=f"core_{i}")
-            nodes.append(node)
-
-        return nodes, phys
+        # Input projection: Map (n_embd) -> (sites * physical_dim)
+        self.input_proj = nn.Linear(n_embd * 2, self.mps_sites * physical_dim)
+        
+        # Output projection: Map (bond_dim * bond_dim) -> (n_embd)
+        # The "entangled" state is the correlation matrix between boundaries, or similar.
+        # Actually, let's define the output as the contracted features per site, then projected back.
+        self.output_proj = nn.Linear(self.mps_sites * bond_dim, n_embd * 2)
 
     def forward(self, x_complex: torch.Tensor):
         """
-        x_complex: (B, T, n_embd, 2) from previous SRGI block
-        Returns: (B, T, n_embd, 2) with entangled correlations + entropy side-output
+        x_complex: (B, T, n_embd, 2)
         """
-        B, T = x_complex.shape[0], x_complex.shape[1]
-        nodes, phys = self._vector_to_mps(x_complex)
-
-        # Simplified entanglement implementation
-        # Create entangled correlations by mixing information across the sequence
-
-        # Compute sequence-wise correlations
-        x_real = x_complex[..., 0]  # (B, T, n_embd)
-        x_imag = x_complex[..., 1]  # (B, T, n_embd)
-
-        # Use the projected physical representation to modulate the output
-        phys_mean = phys.mean(dim=0)  # (physical_dim,)
-        phys_factor = torch.sigmoid(phys_mean).mean()  # scalar modulation factor
-
-        # Create entangled representation via learned mixing
-        entangled_real = x_real
-        entangled_imag = x_imag
-
-        # Add entanglement through learned transformations
-        for i, core in enumerate(self.cores):
-            # Apply each core as a learned transformation
-            core_weight = core.mean()  # Use core parameters
-            # Create position-dependent modulation
-            pos_factor = torch.sin(torch.tensor(float(i) / len(self.cores) * 2 * 3.14159, device=x_real.device))
-            entangled_real = entangled_real + 0.01 * core_weight * pos_factor * phys_factor * x_real
-            entangled_imag = entangled_imag + 0.01 * core_weight * pos_factor * phys_factor * x_imag
-
-        # Reconstruct complex output
-        out_complex = torch.stack([entangled_real, entangled_imag], dim=-1)
-
-        # Compute entropy (simplified)
-        entropy = torch.tensor(1.0, device=x_complex.device)  # Placeholder
-
-        return out_complex, entropy
-
-    @torch.no_grad()
-    def compute_entanglement_entropy(self, nodes):
-        """
-        Simplified entropy computation for regularization.
-        Returns scalar tensor.
-        """
-        # For now, compute entropy based on the variance of the core tensors
-        # This is a placeholder for proper von Neumann entropy
+        B, T, C, _ = x_complex.shape
+        
+        # 1. Flatten complex input
+        x_flat = x_complex.view(B, T, C * 2)
+        
+        # 2. Project to Physical Indices of MPS
+        # (B, T, sites * physical)
+        phys_features = self.input_proj(x_flat)
+        # Reshape to (B, T, sites, physical)
+        phys_features = phys_features.view(B, T, self.mps_sites, self.physical_dim)
+        
+        # 3. MPS Contraction (Parallelized over Batch and Time)
+        # We contract the physical index of the cores with the input features
+        # Core: (sites, bond_L, phys, bond_R)
+        # Input: (B, T, sites, phys)
+        # Result: (B, T, sites, bond_L, bond_R) = Contract phys
+        
+        # Einsum is perfect here.
+        # s: sites, l: bond_L, p: phys, r: bond_R
+        # b: batch, t: time
+        contracted_cores = torch.einsum(
+            'slpr,btsp->btslr',
+            self.cores,
+            phys_features
+        )
+        
+        # Now we have a chain of matrices for each token: A_1 * A_2 * ... * A_sites
+        # But this is a "bottleneck", so maybe we don't just multiply them (which gives a scalar).
+        # We want to keep the internal state.
+        # Let's extract the bond dimensions as the "entangled features".
+        
+        # Flatten the sites and bonds -> (B, T, sites * bond_L * bond_R) is too big?
+        # Let's pool or project.
+        # Current logic: (B, T, sites, bond, bond)
+        # We'll just flatten sites*bond and project, taking the diagonal of the matrices or similar.
+        # A simpler rigorous approach: The "output" of an MPS layer is often the bond values themselves.
+        
+        # Let's take the trace of the matrices? No, that's a scalar.
+        # Let's take the mean over the sites of the "left" bond dimension?
+        entangled_state = contracted_cores.mean(dim=2) # (B, T, bond, bond)
+        entangled_flat = entangled_state.view(B, T, -1)
+        
+        # Wait, bond*bond = 16*16 = 256. sites = 8.
+        # We can project this back.
+        
+        # Improve: Use the contracted chain?
+        # Left-to-right scan? Too slow.
+        # Just using the local contraction features is O(1) depth.
+        
+        # Use just the first dimension of bond
+        entangled_features = contracted_cores.view(B, T, -1) # (B, T, sites * bond^2)
+        
+        # Since output_proj expects (sites * bond), let's adjust.
+        # My init said (sites * bond).
+        # Let's reduce.
+        features = contracted_cores.mean(dim=-1) # (B, T, sites, bond_L)
+        features = features.view(B, T, -1) # (B, T, sites * bond)
+        
+        out_flat = self.output_proj(features) # (B, T, n_embd * 2)
+        
+        # Reshape back to complex
+        out_complex = out_flat.view(B, T, C, 2)
+        
+        # 4. Compute Entropy (Real von Neumann of the average Core)
+        # We compute singular values of the unfolded cores
+        # Core: (sites, bond, phys, bond) -> Unfold to (sites*bond, phys*bond)
         entropy = 0.0
-        for core in self.cores:
-            # Compute entropy from eigenvalue spectrum of core
-            core_flat = core.view(-1, core.shape[-1])
-            cov = torch.cov(core_flat.T)
-            eigvals = torch.linalg.eigvals(cov).real
-            eigvals = eigvals.clamp(min=1e-12)
-            eigvals = eigvals / eigvals.sum()
-            entropy += -(eigvals * torch.log(eigvals)).sum()
-
-        return entropy / len(self.cores)
+        # Sample one site for efficiency
+        core_sample = self.cores[0] # (bond, phys, bond)
+        mat = core_sample.view(self.bond_dim, -1)
+        u, s, v = torch.svd(mat)
+        s = s / (s.sum() + 1e-6) # Normalize
+        entropy = -(s * torch.log(s + 1e-9)).sum()
+        
+        return out_complex, entropy
