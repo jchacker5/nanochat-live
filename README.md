@@ -224,6 +224,8 @@ loss = nll + fisher_reg
 
 ### Mathematical Foundations
 
+**Topological Deep Learning & Čech-de Rham Theorem** bridges discrete combinatorial structures (Čech cohomology) with smooth differential forms (de Rham cohomology), providing a blueprint for neural networks that preserve topological invariants. SRGI's geometric bottlenecks can be viewed as implementing a simplified Double Complex Network: hyperbolic space captures discrete hierarchical structures (Čech-like), while toroidal space provides smooth periodic embeddings (de Rham-like). The phase-aware attention mechanism enforces commutativity between discrete token interactions and continuous phase dynamics, analogous to the double complex's commuting diagram. See §3.4.1 of the SRGI paper for detailed discussion of De Rham compatible neural networks, Topological Deep Learning (TDL), and the proposed Double Complex Network architecture.
+
 **Information Geometry** provides the rigorous mathematical foundation for SRGI's geometric operations:
 
 - **Nielsen, F. (2022)**: *The Many Faces of Information Geometry*. Notices of the AMS, 69(1), 36-45. This foundational paper provides the mathematical framework for working with probability distributions on Riemannian manifolds — essential for SRGI's geometric bottlenecks (Phase-2). Explains Fisher-Rao metrics, geodesic distances, dual connections, dually flat spaces, and curvature's role in statistical inference.
