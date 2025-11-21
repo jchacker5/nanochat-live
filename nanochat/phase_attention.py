@@ -72,7 +72,7 @@ class PhaseAwareAttention(nn.Module):
         # β ∈ [0, 1] controls how much phase coherence affects attention
         self.beta = nn.Parameter(torch.ones(n_head) * beta_init)
     
-    def forward(self, x, cos_sin, kv_cache=None):
+    def forward(self, x, cos_sin, kv_cache=None, return_commutativity_loss=False):
         """
         Forward pass with phase-aware attention.
         
@@ -80,9 +80,11 @@ class PhaseAwareAttention(nn.Module):
             x: Input tensor of shape (B, T, n_embd)
             cos_sin: Tuple of (cos, sin) tensors for RoPE, each shape (1, T, 1, head_dim//2)
             kv_cache: Optional KV cache for inference
+            return_commutativity_loss: If True, return commutativity loss (δd - dδ)
         
         Returns:
             Output tensor of shape (B, T, n_embd)
+            If return_commutativity_loss=True, also returns scalar commutativity loss
         """
         B, T, C = x.shape
         
@@ -174,6 +176,47 @@ class PhaseAwareAttention(nn.Module):
         # Re-assemble and project
         y = y.transpose(1, 2).contiguous().view(B, Tq, C)
         y = self.c_proj(y)
+        
+        if return_commutativity_loss:
+            # Compute commutativity loss: ||δd - dδ||
+            # δ = discrete coboundary (token adjacency)
+            # d = continuous differential (phase gradient)
+            
+            if Tq > 2:  # Need at least 3 tokens for coboundary
+                # Discrete coboundary: δx[i] = x[i+1] - x[i] (token differences)
+                discrete_coboundary = x[:, 1:, :] - x[:, :-1, :]  # (B, T-1, n_embd)
+                
+                # Continuous differential: dφ = phase gradient from q_rot
+                q_rot_flat = q_rot.transpose(1, 2).contiguous().view(B, Tq, self.n_head * self.head_dim)
+                phase_gradient = q_rot_flat[:, 1:, :] - q_rot_flat[:, :-1, :]  # (B, T-1, n_head*head_dim)
+                
+                # Apply operations in both orders
+                # δd: discrete coboundary of continuous differential
+                if discrete_coboundary.shape[1] > 1:
+                    delta_d = discrete_coboundary[:, 1:, :] - discrete_coboundary[:, :-1, :]
+                    
+                    # dδ: continuous differential of discrete coboundary
+                    d_delta = phase_gradient[:, 1:, :] - phase_gradient[:, :-1, :]
+                    
+                    # Project to same dimension for comparison
+                    if delta_d.shape[-1] != d_delta.shape[-1]:
+                        proj = nn.Linear(d_delta.shape[-1], delta_d.shape[-1], device=x.device, dtype=x.dtype)
+                        d_delta_proj = proj(d_delta)
+                    else:
+                        d_delta_proj = d_delta
+                    
+                    # Commutativity loss: ||δd - dδ||
+                    if delta_d.shape == d_delta_proj.shape:
+                        commutativity_loss = torch.mean((delta_d - d_delta_proj).pow(2))
+                    else:
+                        # Fallback: use norm difference
+                        commutativity_loss = torch.mean((torch.norm(delta_d, dim=-1) - torch.norm(d_delta_proj, dim=-1)).pow(2))
+                else:
+                    commutativity_loss = torch.tensor(0.0, device=x.device)
+            else:
+                commutativity_loss = torch.tensor(0.0, device=x.device)
+            
+            return y, commutativity_loss
         
         return y
 

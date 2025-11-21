@@ -212,6 +212,7 @@ class GeometricBottleneck(nn.Module):
         hyperbolic_dim: Dimension of hyperbolic space (default: 64)
         n_circles: Number of circles in torus (default: 4)
         use_geoopt: Whether to use geoopt for hyperbolic operations (default: True)
+        track_betti: Whether to track Betti numbers for topology preservation (default: False)
     
     Shape:
         - Input: (batch, seq_len, n_embd)
@@ -225,28 +226,50 @@ class GeometricBottleneck(nn.Module):
         torch.Size([4, 100, 768])
     """
     
-    def __init__(self, n_embd, hyperbolic_dim=64, n_circles=4, use_geoopt=True):
+    def __init__(self, n_embd, hyperbolic_dim=64, n_circles=4, use_geoopt=True, track_betti=False):
         super().__init__()
         self.hyperbolic = HyperbolicBottleneck(n_embd, hyperbolic_dim, use_geoopt=use_geoopt)
         self.toroidal = ToroidalBottleneck(n_embd, n_circles)
+        self.track_betti = track_betti
         
         # Mixing weight (learned)
         self.alpha = nn.Parameter(torch.tensor(0.5))
+        
+        # Betti number tracker (lazy import to avoid scipy dependency)
+        self.betti_tracker = None
+        if track_betti:
+            try:
+                from nanochat.persistence_homology import PersistenceHomologyTracker
+                self.betti_tracker = PersistenceHomologyTracker(max_dim=1)
+            except (ImportError, ModuleNotFoundError):
+                self.track_betti = False
+                self.betti_tracker = None
     
-    def forward(self, x):
+    def forward(self, x, return_betti=False):
         """
         Forward pass through combined geometric bottleneck.
         
         Args:
             x: Input tensor of shape (B, T, n_embd)
+            return_betti: If True, return Betti numbers before/after
         
         Returns:
             Output tensor of shape (B, T, n_embd)
+            If return_betti=True, also returns (betti_before, betti_after)
         """
+        if self.track_betti and return_betti and self.betti_tracker is not None:
+            betti_before = self.betti_tracker.compute_betti_number(x)
+        
         x_hyp = self.hyperbolic(x)
         x_tor = self.toroidal(x)
         
         # Weighted combination
         alpha = torch.sigmoid(self.alpha)  # Ensure [0, 1]
-        return alpha * x_hyp + (1 - alpha) * x_tor
+        output = alpha * x_hyp + (1 - alpha) * x_tor
+        
+        if self.track_betti and return_betti and self.betti_tracker is not None:
+            betti_after = self.betti_tracker.compute_betti_number(output)
+            return output, betti_before, betti_after
+        
+        return output
 
