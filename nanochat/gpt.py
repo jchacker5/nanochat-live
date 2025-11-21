@@ -250,19 +250,36 @@ class GPT(nn.Module):
                 group["initial_lr"] = group["lr"]
         return optimizers
 
-    def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean'):
-        B, T = idx.size()
+    def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean', multimodal_tokens=None):
+        """
+        Forward pass supporting both text tokens and multimodal tokens.
+        
+        Args:
+            idx: Token IDs (B, T) for text tokens, or None if using multimodal_tokens
+            multimodal_tokens: Pre-embedded tokens (B, T, n_embd) for vision/audio, or None
+            targets: Target token IDs for loss computation
+            kv_cache: KV cache for inference
+            loss_reduction: Loss reduction method
+        """
+        # Handle multimodal inputs: if multimodal_tokens provided, use them directly
+        if multimodal_tokens is not None:
+            x = multimodal_tokens
+            B, T, C = x.shape
+            assert C == self.config.n_embd, f"Multimodal tokens dim {C} != model dim {self.config.n_embd}"
+        else:
+            # Standard text token path
+            B, T = idx.size()
+            x = self.transformer.wte(idx)
 
         # Grab the rotary embeddings for the current sequence length (they are of shape (1, seq_len, 1, head_dim))
         assert T <= self.cos.size(1), f"Sequence length grew beyond the rotary embeddings cache: {T} > {self.cos.size(1)}"
-        assert idx.device == self.cos.device, f"Rotary embeddings and idx are on different devices: {idx.device} != {self.cos.device}"
+        assert x.device == self.cos.device, f"Input and rotary embeddings on different devices: {x.device} != {self.cos.device}"
         assert self.cos.dtype == torch.bfloat16, "Rotary embeddings must be in bfloat16"
         # if kv cache exists, we need to offset the rotary embeddings to the current position in the cache
         T0 = 0 if kv_cache is None else kv_cache.get_pos()
         cos_sin = self.cos[:, T0:T0+T], self.sin[:, T0:T0+T] # truncate cache to current sequence length
 
         # Forward the trunk of the Transformer
-        x = self.transformer.wte(idx)
         x = norm(x)
         for block in self.transformer.h:
             x = block(x, cos_sin, kv_cache)
