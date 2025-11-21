@@ -26,58 +26,90 @@ function print_info() {
 
 function build_image() {
     print_header "Building Docker Image"
-    docker-compose build
+    # Try docker compose (newer) first, then docker-compose (older)
+    if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        docker compose build
+    elif command -v docker-compose &> /dev/null; then
+        docker-compose build
+    else
+        echo "Error: Neither 'docker compose' nor 'docker-compose' found"
+        exit 1
+    fi
     print_success "Image built successfully"
+}
+
+# Helper function to get docker compose command
+function get_docker_compose() {
+    if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        echo "docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+    else
+        echo "ERROR"
+    fi
 }
 
 function start_container() {
     print_header "Starting Container"
-    docker-compose up -d srgi
+    DOCKER_COMPOSE=$(get_docker_compose)
+    if [ "$DOCKER_COMPOSE" = "ERROR" ]; then
+        echo "Error: Docker Compose not found"
+        exit 1
+    fi
+    $DOCKER_COMPOSE up -d srgi
     print_success "Container started"
     print_info "Run 'docker-helper.sh shell' to enter the container"
 }
 
 function stop_container() {
     print_header "Stopping Container"
-    docker-compose down
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE down
     print_success "Container stopped"
 }
 
 function shell() {
     print_header "Entering Container Shell"
-    docker-compose exec srgi /bin/bash
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE exec srgi /bin/bash
 }
 
 function run_tests() {
     print_header "Running Tests"
-    docker-compose exec srgi pytest tests/ -v
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE exec srgi pytest tests/ -v
 }
 
 function run_ebm_tests() {
     print_header "Running EBM Tests"
-    docker-compose exec srgi pytest tests/test_ebm_hopfield.py -v
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE exec srgi pytest tests/test_ebm_hopfield.py -v
 }
 
 function install_thrml() {
     print_header "Installing THRML"
-    docker-compose exec srgi pip install git+https://github.com/extropic-ai/thrml.git
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE exec srgi pip install git+https://github.com/extropic-ai/thrml.git
     print_success "THRML installed"
 }
 
 function clean() {
     print_header "Cleaning Up"
-    docker-compose down -v
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE down -v
     docker rmi $IMAGE_NAME 2>/dev/null || true
     print_success "Cleaned up containers and images"
 }
 
 function logs() {
-    docker-compose logs -f srgi
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE logs -f srgi
 }
 
 function rebuild() {
     print_header "Rebuilding Container"
-    docker-compose build --no-cache
+    DOCKER_COMPOSE=$(get_docker_compose)
+    $DOCKER_COMPOSE build --no-cache
     print_success "Container rebuilt"
 }
 
