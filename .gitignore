@@ -45,3 +45,6 @@ rustbpe/**/*.rs.bk
 # Temporary
 *.tmp
 *.cache
+
+# Test results (generated)
+TEST_RESULTS*.md

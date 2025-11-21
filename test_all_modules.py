@@ -239,23 +239,24 @@ def test_scripts():
     """Test script modules can be imported."""
     results = []
     scripts = [
-        "scripts.base_train",
-        "scripts.chat_cli",
-        "scripts.chat_web",
-        "scripts.chat_sft",
-        "scripts.ssm_demo",
-        "scripts.tok_train",
-        "scripts.tok_eval",
+        ("scripts.base_train", "base_train"),
+        ("scripts.chat_cli", "chat_cli"),
+        ("scripts.chat_web", "chat_web"),
+        ("scripts.chat_sft", "chat_sft"),
+        ("scripts.ssm_demo", "ssm_demo"),
+        ("scripts.tok_train", "tok_train"),
+        ("scripts.tok_eval", "tok_eval"),
     ]
     
-    for script_name in scripts:
+    for script_name, short_name in scripts:
         try:
+            # Import as module (not as script)
             module = importlib.import_module(script_name)
-            results.append((script_name, True, "Module imported successfully"))
+            results.append((short_name, True, "Module imported successfully"))
         except Exception as e:
             # Some scripts might fail due to missing dependencies or config, that's ok
             error_msg = str(e)[:100]
-            results.append((script_name, False, f"Import error: {error_msg}"))
+            results.append((short_name, False, f"Import error: {error_msg}"))
     
     return results
 
@@ -372,25 +373,100 @@ def generate_report(results: Dict) -> str:
     
     return "\n".join(report)
 
+def run_single_test(module_name: str):
+    """Run tests for a single module."""
+    test_map = {
+        "tokenizer": ("nanochat.tokenizer", test_tokenizer),
+        "gpt": ("nanochat.gpt", test_gpt),
+        "engine": ("nanochat.engine", test_engine),
+        "ssm": ("nanochat.ssm", test_ssm),
+        "checkpoint": ("nanochat.checkpoint_manager", test_checkpoint_manager),
+        "common": ("nanochat.common", test_common),
+        "dataset": ("nanochat.dataset", test_dataset),
+        "tasks": ("tasks", test_tasks),
+        "scripts": ("scripts", test_scripts),
+    }
+    
+    if module_name not in test_map:
+        print(f"Unknown module: {module_name}")
+        print(f"Available modules: {', '.join(test_map.keys())}")
+        return None
+    
+    full_module_name, test_func = test_map[module_name]
+    print(f"Testing {full_module_name}...")
+    
+    try:
+        can_import, import_msg = test_module_import(full_module_name)
+        if can_import:
+            results = test_func()
+            return {
+                full_module_name: {
+                    "import": (True, import_msg),
+                    "tests": results
+                }
+            }
+        else:
+            return {
+                full_module_name: {
+                    "import": (False, import_msg),
+                    "tests": []
+                }
+            }
+    except Exception as e:
+        return {
+            full_module_name: {
+                "import": (False, str(e)),
+                "tests": []
+            }
+        }
+
 if __name__ == "__main__":
-    print("=" * 60)
-    print("NanoChat-Live Comprehensive Module Testing")
-    print("=" * 60)
-    print()
+    import sys
     
-    results = run_all_tests()
-    report = generate_report(results)
-    
-    # Print to console
-    print("\n" + "=" * 60)
-    print("TEST REPORT")
-    print("=" * 60)
-    print(report)
-    
-    # Save to file
-    report_file = "TEST_RESULTS.md"
-    with open(report_file, "w") as f:
-        f.write(report)
-    
-    print(f"\n✅ Report saved to: {report_file}")
+    # Check if a specific module was requested
+    if len(sys.argv) > 1:
+        module_name = sys.argv[1].lower()
+        print("=" * 60)
+        print(f"NanoChat-Live Testing: {module_name}")
+        print("=" * 60)
+        print()
+        
+        results = run_single_test(module_name)
+        if results:
+            report = generate_report(results)
+            print("\n" + "=" * 60)
+            print("TEST REPORT")
+            print("=" * 60)
+            print(report)
+            
+            # Save to file
+            report_file = f"TEST_RESULTS_{module_name}.md"
+            with open(report_file, "w") as f:
+                f.write(report)
+            print(f"\n✅ Report saved to: {report_file}")
+    else:
+        # Run all tests
+        print("=" * 60)
+        print("NanoChat-Live Comprehensive Module Testing")
+        print("=" * 60)
+        print("(Run with module name as argument to test individual module)")
+        print("Available: tokenizer, gpt, engine, ssm, checkpoint, common, dataset, tasks, scripts")
+        print("=" * 60)
+        print()
+        
+        results = run_all_tests()
+        report = generate_report(results)
+        
+        # Print to console
+        print("\n" + "=" * 60)
+        print("TEST REPORT")
+        print("=" * 60)
+        print(report)
+        
+        # Save to file
+        report_file = "TEST_RESULTS.md"
+        with open(report_file, "w") as f:
+            f.write(report)
+        
+        print(f"\n✅ Report saved to: {report_file}")
 
