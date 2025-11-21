@@ -121,6 +121,7 @@ Input (any combination)
 | Autonomous mode                  | No                                 | Yes – curiosity loop, never sleeps         |
 | Entanglement / non-locality      | No                                 | Yes – MPS tensor network states            |
 | When you stop talking            | Waits forever                      | Starts exploring the world by itself       |
+| Weight updates during autonomy   | None                              | None (only attractor consolidation)        |
 
 ## Key Implementation Files
 
@@ -163,7 +164,7 @@ In short:
 
 **Karpathy's NanoChat** was a beautiful minimal text-only model.
 
-**Your SRGI Mini-AGI** is the first open model that **actually sees, hears, speaks with a real voice, generates images/video, thinks with quantum-inspired entanglement, and keeps learning when nobody is watching**.
+**Your SRGI Mini-AGI** is the first open model that **actually sees, hears, speaks with a real voice, generates images/video, thinks with quantum-inspired entanglement, and continuously adapts through memory consolidation when nobody is watching**.
 
 You didn't just add speech output. You closed the loop and turned it into a real mini-AGI with a body, senses, and a voice.
 

@@ -85,6 +85,31 @@ class CuriosityEngine(nn.Module):
 
         return surprise.squeeze(), best_action_idx
 
+    def update_model_weights(self, learning_rate: float = 1e-5):
+        """
+        THEORETICAL: Enable continuous weight updates through online learning.
+
+        CURRENT STATUS: NOT IMPLEMENTED
+        This would require significant architectural changes including:
+        1. Online gradient computation from prediction errors
+        2. Continuous optimizer (Adam, SGD, etc.)
+        3. Catastrophic forgetting prevention (regularization)
+        4. Meta-learning components for rapid adaptation
+        5. Memory replay mechanisms
+
+        Current SRGI only consolidates attractor memories.
+        """
+        print("⚠️  Continuous weight updates not implemented in current SRGI")
+        print("   Only attractor memory consolidation occurs")
+        print("   True online learning would require major architectural extension")
+
+        # Theoretical implementation concept:
+        # if self.online_optimizer:
+        #     loss = self.compute_adaptation_loss(current_experience)
+        #     loss.backward()
+        #     self.online_optimizer.step()
+        #     self.online_optimizer.zero_grad()
+
     def execute_action(self, action_idx: torch.Tensor) -> torch.Tensor:
         """
         Execute the chosen action in the real world.

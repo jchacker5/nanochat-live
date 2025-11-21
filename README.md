@@ -321,22 +321,22 @@ python scripts/base_train.py --autonomous_mode=True --curiosity_threshold=0.1
 
 ### 🔄 SRGI is the First Open Model That Never Stops Learning
 
-**After initial training, leave it running with `--autonomous` and its weights will slowly self-improve forever using only its webcam, microphone, and internal curiosity — no more training scripts required.**
+**After initial training, leave it running with `--autonomous` and it will continuously adapt through memory consolidation using only its webcam, microphone, and internal curiosity — no traditional retraining required.**
 
 Unlike traditional models that stop learning after training:
 
 - **Traditional AI**: Train once → Deploy → Stagnates forever
-- **SRGI Mini-AGI**: Train once → Deploy → **Learns continuously from experience**
+- **SRGI Mini-AGI**: Train once → Deploy → **Adapts continuously through experience**
 
-**How it works:**
+**How it actually works (technical detail):**
 1. **Initial Training**: Standard supervised learning on text/vision/audio data
 2. **Deployment**: Launch with `--autonomous` flag
-3. **Lifelong Learning**: Model generates its own learning curriculum:
+3. **Continuous Adaptation**: Model generates its own learning curriculum:
    - Moves camera to explore new visual patterns
    - Asks itself questions about observations
    - Experiments with actions and observations
-   - Consolidates insights into stable attractor memories
-   - **Weights improve gradually over time**
+   - **Consolidates experiences into stable attractor memories**
+   - **Neural weights remain fixed** - only memory patterns stabilize and associations strengthen
 
 **Real-world example:**
 ```bash
