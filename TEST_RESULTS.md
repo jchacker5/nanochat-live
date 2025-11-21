@@ -1,91 +1,49 @@
 # NanoChat-Live Comprehensive Test Results
 
-**Generated:** 2025-11-20 17:49:32
+**Generated:** 2025-11-20 21:26:20
 
 ---
 
 ## nanochat.tokenizer
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'tokenizers'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| get_tokenizer | ✅ PASS | Success |
-| encode/decode | ✅ PASS | Encoded and decoded: 'Hello, world!' == 'Hello, world!' |
-| get_bos_token_id | ✅ PASS | BOS token ID: 256 |
 
 
 ## nanochat.gpt
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'torch'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| GPTConfig creation | ✅ PASS | Config created successfully |
-| GPT model creation | ✅ PASS | Model created successfully |
 
 
 ## nanochat.engine
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'torch'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| KVCache creation | ✅ PASS | KVCache created successfully |
-| KVCache resize | ❌ FAIL | Resized from 128 to 128 |
 
 
 ## nanochat.ssm
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'torch'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| StableResonantSSM creation | ✅ PASS | SSM created successfully |
-| SSM forward pass | ✅ PASS | Output shape: torch.Size([2, 10, 64]) |
-| ResonantBlock forward pass | ✅ PASS | Block output shape: torch.Size([2, 10, 64]) |
 
 
 ## nanochat.checkpoint_manager
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'torch'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| get_base_dir | ✅ PASS | Base dir: /Users/jchacker5/.cache/nanochat |
 
 
 ## nanochat.common
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'torch'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| get_base_dir | ✅ PASS | Base dir: /Users/jchacker5/.cache/nanochat |
-| autodetect_device_type | ✅ PASS | Device type: mps |
 
 
 ## nanochat.dataset
 
-**Import Status:** ✅ Import successful
+**Import Status:** ❌ No module named 'requests'
 
-### Test Results
-
-| Test | Status | Details |
-|------|--------|---------|
-| list_parquet_files | ✅ PASS | Found 1 parquet files |
 
 
 ## tasks
@@ -96,18 +54,35 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| tasks.arc | ✅ PASS | ARC imported successfully |
-| tasks.gsm8k | ✅ PASS | GSM8K imported successfully |
-| tasks.mmlu | ✅ PASS | MMLU imported successfully |
-| tasks.humaneval | ✅ PASS | HumanEval imported successfully |
-| tasks.smoltalk | ✅ PASS | SmolTalk imported successfully |
+| tasks.arc | ❌ FAIL | No module named 'datasets' |
+| tasks.gsm8k | ❌ FAIL | No module named 'datasets' |
+| tasks.mmlu | ❌ FAIL | No module named 'datasets' |
+| tasks.humaneval | ❌ FAIL | No module named 'datasets' |
+| tasks.smoltalk | ❌ FAIL | No module named 'datasets' |
+
+
+## scripts
+
+**Import Status:** ✅ Scripts module
+
+### Test Results
+
+| Test | Status | Details |
+|------|--------|---------|
+| scripts.base_train | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.chat_cli | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.chat_web | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.chat_sft | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.ssm_demo | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.tok_train | ❌ FAIL | Import error: No module named 'torch' |
+| scripts.tok_eval | ❌ FAIL | Import error: No module named 'tokenizers' |
 
 
 ---
 
 ## Summary
 
-- **Total Tests:** 19
-- **Passed:** 18 ✅
-- **Failed:** 1 ❌
-- **Success Rate:** 94.7%
+- **Total Tests:** 12
+- **Passed:** 0 ✅
+- **Failed:** 12 ❌
+- **Success Rate:** 0.0%

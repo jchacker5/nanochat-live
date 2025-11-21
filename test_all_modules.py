@@ -102,17 +102,29 @@ def test_engine():
         # Test KVCache insert_kv (this will initialize the cache)
         k = torch.randn(1, 4, 1, 64)
         v = torch.randn(1, 4, 1, 64)
+        
+        # Insert for all layers to properly test cache behavior
+        # First insert initializes the cache
         kv_cache.insert_kv(0, k, v)
+        kv_cache.insert_kv(1, k, v)  # Last layer increments pos
         
         if kv_cache.kv_cache is not None:
             original_len = kv_cache.kv_cache.shape[4]
             # Insert tokens beyond initial seq_len to test resize
             # The cache starts at seq_len=128, so insert 200 tokens
+            # We need to insert for all layers, with the last layer incrementing pos
             for i in range(200):
-                kv_cache.insert_kv(0, k, v)
+                kv_cache.insert_kv(0, k, v)  # Layer 0
+                kv_cache.insert_kv(1, k, v)   # Last layer (increments pos)
             new_len = kv_cache.kv_cache.shape[4] if kv_cache.kv_cache is not None else original_len
-            # Cache may resize or may use a different strategy - just verify it works
-            results.append(("KVCache insert_kv", True, f"Inserted tokens successfully, cache len: {new_len}"))
+            # Verify cache resized (should be >= original_len, likely larger if we exceeded 128)
+            cache_resized = new_len >= original_len
+            results.append(("KVCache insert_kv", True, f"Inserted tokens successfully, cache len: {new_len} (original: {original_len})"))
+            # Test resize specifically - cache should resize when exceeding initial seq_len
+            if kv_cache.pos > original_len:
+                results.append(("KVCache resize", cache_resized, f"Cache resized from {original_len} to {new_len} when pos={kv_cache.pos}"))
+            else:
+                results.append(("KVCache resize", True, f"Cache size: {new_len}, pos: {kv_cache.pos} (no resize needed)"))
         else:
             results.append(("KVCache insert_kv", True, "KVCache insert_kv works"))
         

@@ -22,6 +22,12 @@ dependencies = [
 geoopt = [
     "geoopt>=0.2.0",
 ]
+cpu = [  
+    "torch>=2.8.0",  
+]  
+gpu = [  
+    "torch>=2.8.0",  
+]
 
 [build-system]
 requires = ["maturin>=1.7,<2.0"]
@@ -63,15 +69,7 @@ explicit = true
 [[tool.uv.index]]  
 name = "pytorch-cu128"  
 url = "https://download.pytorch.org/whl/cu128"  
-explicit = true
-
-[project.optional-dependencies]  
-cpu = [  
-    "torch>=2.8.0",  
-]  
-gpu = [  
-    "torch>=2.8.0",  
-]  
+explicit = true  
   
 [tool.uv]  
 conflicts = [  
