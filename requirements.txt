@@ -15,6 +15,7 @@ wandb>=0.21.3
 numpy>=1.22.0
 scipy>=1.9.0
 matplotlib>=3.7.0
+tensornetwork>=0.4.6
 
 # Testing
 pytest>=8.0.0

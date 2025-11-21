@@ -157,64 +157,20 @@ class Block(nn.Module):
 
 class SRGIBlock(nn.Module):
     """
-    Complete SRGI Block integrating all physics-inspired components:
-    - Spinor embeddings (complex representations)
-    - Unitary/orthogonal layers (stability)
-    - Resonant SSM (phase dynamics)
-    - Phase-aware attention (coherent routing)
-    - Geometric bottleneck (manifold structure)
-    - Attractor memory (EBM Hopfield)
-    - Modal reasoning (optional)
-    - Entangled bottleneck (quantum-inspired, optional)
+    SRGI Block with quantum-inspired entanglement bottleneck.
+    This is a minimal implementation focusing on the entanglement feature.
+    Full SRGI implementation can be expanded with additional components.
     """
     def __init__(self, config, layer_idx):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
 
-        # Core SRGI components
-        from nanochat.spinor_embeddings import SpinorEmbeddingLayer
-        from nanochat.unitary_linear import UnitaryLinear
-        from nanochat.ssm import ResonantSSM
-        from nanochat.phase_attention import PhaseAwareAttention
-        from nanochat.geometric_bottleneck import GeometricBottleneck
-        from nanochat.ebm_hopfield import EBMHopfieldMemory if config.use_ebm_hopfield else None
-        from nanochat.hopfield_memory import ModernHopfieldMemory if not config.use_ebm_hopfield else None
+        # Standard transformer components (can be enhanced with SRGI components later)
+        self.attn = CausalSelfAttention(config, layer_idx)
+        self.mlp = MLP(config)
 
-        # Initialize components
-        self.spinor_embed = SpinorEmbeddingLayer(config.n_embd)
-        self.unitary_proj = UnitaryLinear(config.n_embd, config.n_embd)
-        self.resonant_ssm = ResonantSSM(config.n_embd, state_dim=config.n_embd)
-        self.phase_attn = PhaseAwareAttention(config)
-        self.geom_bottleneck = GeometricBottleneck(config.n_embd)
-
-        # Memory component
-        if config.use_ebm_hopfield:
-            self.memory = EBMHopfieldMemory(
-                embed_dim=config.n_embd,
-                memory_size=config.hopfield_memory_size,
-                beta=config.hopfield_beta,
-                n_steps=config.hopfield_n_steps,
-                sampling_method=config.ebm_sampling_method,
-                temperature=config.ebm_temperature,
-                use_thrml=config.ebm_use_thrml
-            )
-        elif config.use_hopfield:
-            self.memory = ModernHopfieldMemory(
-                embed_dim=config.n_embd,
-                memory_size=config.hopfield_memory_size,
-                beta=config.hopfield_beta,
-                n_steps=config.hopfield_n_steps
-            )
-        else:
-            self.memory = None
-
-        # Optional components
-        self.use_modal = getattr(config, 'use_modal_reasoning', False)
-        if self.use_modal:
-            from nanochat.modal_reasoning import ModalReasoningLayer
-            self.modal_reasoning = ModalReasoningLayer(config.n_embd)
-
+        # Entangled bottleneck (quantum-inspired, optional)
         self.use_entangle = getattr(config, 'use_entangle', False)
         if self.use_entangle:
             from nanochat.entangle import EntangledBottleneck
@@ -222,44 +178,27 @@ class SRGIBlock(nn.Module):
 
     def forward(self, x, cos_sin=None, kv_cache=None, total_entropy=0.0):
         """
-        Forward pass through complete SRGI block.
+        Forward pass with optional entanglement bottleneck.
         Returns: (output, entropy_loss) where entropy_loss is scalar for regularization
         """
-        B, T, C = x.shape
+        # Standard transformer forward
+        x = x + self.attn(norm(x), cos_sin, kv_cache)
+        x = x + self.mlp(norm(x))
 
-        # Phase 1: Spinor embeddings (complex representations)
-        x_complex = self.spinor_embed(x)  # (B, T, C, 2) - complex
-
-        # Phase 2: Unitary projection (stability)
-        x_complex = self.unitary_proj(x_complex)
-
-        # Phase 3: Resonant SSM (phase dynamics)
-        x_complex = self.resonant_ssm(x_complex)
-
-        # Phase 4: Phase-aware attention (coherent routing)
-        x_complex = self.phase_attn(x_complex, cos_sin, kv_cache)
-
-        # Phase 5: Geometric bottleneck (manifold structure)
-        x_complex = self.geom_bottleneck(x_complex)
-
-        # Phase 6: Attractor memory (if enabled)
-        if self.memory is not None:
-            x_complex = self.memory(x_complex)
-
-        # Phase 7: Modal reasoning (optional)
-        if self.use_modal:
-            x_complex = self.modal_reasoning(x_complex)
-
-        # Phase 8: Entangled bottleneck (quantum-inspired, optional)
+        # Apply entanglement bottleneck if enabled
         entropy = 0.0
         if self.use_entangle:
+            # Convert to complex for entanglement processing
+            x_real, x_imag = x, torch.zeros_like(x)
+            x_complex = torch.stack([x_real, x_imag], dim=-1)  # (B, T, n_embd, 2)
+
             x_complex, entropy = self.entangle(x_complex)
             total_entropy = total_entropy + entropy
 
-        # Convert back to real representation for next layer
-        x_out = torch.sqrt(x_complex[..., 0]**2 + x_complex[..., 1]**2)  # magnitude
+            # Convert back to real representation
+            x = x_complex[..., 0]  # Take real part
 
-        return x_out, total_entropy
+        return x, total_entropy
 
 
 class GPT(nn.Module):
