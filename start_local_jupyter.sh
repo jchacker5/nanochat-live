@@ -12,7 +12,14 @@ echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Start Jupyter with Colab-compatible settings
-jupyter notebook \
+# Try jupyter directly, fall back to python3 -m jupyter
+if command -v jupyter &> /dev/null; then
+    JUPYTER_CMD=jupyter
+else
+    JUPYTER_CMD="python3 -m jupyter"
+fi
+
+$JUPYTER_CMD notebook \
     --NotebookApp.allow_origin='https://colab.research.google.com' \
     --port=8888 \
     --NotebookApp.port_retries=0 \

@@ -14,6 +14,10 @@ This setup allows you to use Colab's interface while running code on your local 
 ### 1. Install Dependencies
 
 ```bash
+# Use python3 -m pip if pip not in PATH
+python3 -m pip install jupyter jupyter_http_over_ws
+
+# OR if you have pip directly
 pip install jupyter jupyter_http_over_ws
 ```
 
@@ -69,8 +73,8 @@ jupyter notebook \
 
 **Extension not found?**
 ```bash
-pip install --upgrade jupyter jupyter_http_over_ws
-jupyter server extension list  # Check if enabled
+python3 -m pip install --upgrade jupyter jupyter_http_over_ws
+python3 -m jupyter server extension list  # Check if enabled
 ```
 
 **Port 8888 already in use?**
