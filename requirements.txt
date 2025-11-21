@@ -33,6 +33,12 @@ equinox>=0.11.2
 # Optional: Geometric operations
 geoopt>=0.2.0
 
+# Speech synthesis (native voice output like ChatGPT)
+gtts>=2.5.0  # Google Text-to-Speech
+pyttsx3>=2.90  # Offline TTS engine
+torchaudio>=2.0.0  # PyTorch audio processing
+soundfile>=0.12.0  # Audio file I/O
+
 # Development tools
 maturin>=1.9.4  # For building rustbpe
 

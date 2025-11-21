@@ -67,13 +67,13 @@ def test_srgi_generation():
 
     # Create dummy input
     B, T = 1, 8
-    idx = torch.randint(0, 1000, (B, T))
+    idx = torch.randint(0, 1000, (B, T)).tolist()[0]  # Convert to list
 
     # Generate
     with torch.no_grad():
-        generated = model.generate(idx, max_new_tokens=10, temperature=0.8)
+        generated = list(model.generate(idx, max_tokens=10, temperature=0.8))
 
-    print(f"✓ Generation successful, output shape: {generated.shape}")
+    print(f"✓ Generation successful, generated {len(generated)} tokens")
 
 def test_srgi_with_different_configs():
     """Test SRGI with different configurations."""

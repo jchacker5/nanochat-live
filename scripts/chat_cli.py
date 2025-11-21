@@ -10,6 +10,7 @@ from nanochat.common import compute_init, autodetect_device_type
 from contextlib import nullcontext
 from nanochat.engine import Engine
 from nanochat.checkpoint_manager import load_model
+from nanochat.speech_synthesis import speak_response
 
 parser = argparse.ArgumentParser(description='Chat with the model')
 parser.add_argument('-i', '--source', type=str, default="sft", help="Source of the model: sft|mid|rl")
@@ -20,6 +21,8 @@ parser.add_argument('-t', '--temperature', type=float, default=0.6, help='Temper
 parser.add_argument('-k', '--top-k', type=int, default=50, help='Top-k sampling parameter')
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
+parser.add_argument('-v', '--voice', type=str, default=None, choices=['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], help='Enable voice output with specified ChatGPT-style voice')
+parser.add_argument('--tts-engine', type=str, default='gtts', choices=['gtts', 'pyttsx3'], help='TTS engine for voice output')
 args = parser.parse_args()
 
 # Init the model and tokenizer
@@ -87,13 +90,28 @@ while True:
     }
     response_tokens = []
     print("\nAssistant: ", end="", flush=True)
+
+    # Collect the full response text for speech synthesis
+    response_text = ""
+
     with autocast_ctx:
         for token_column, token_masks in engine.generate(conversation_tokens, **generate_kwargs):
             token = token_column[0] # pop the batch dimension (num_samples=1)
             response_tokens.append(token)
             token_text = tokenizer.decode([token])
             print(token_text, end="", flush=True)
+            response_text += token_text
     print()
+
+    # Speak the response if voice is enabled (ChatGPT-style)
+    if args.voice:
+        try:
+            print(f"\n🔊 Speaking with voice '{args.voice}'...", end="", flush=True)
+            speak_response(response_text.strip(), args.voice)
+            print(" ✓")
+        except Exception as e:
+            print(f"\n⚠️  Speech synthesis failed: {e}")
+            print("  (Make sure TTS dependencies are installed: pip install gtts pyttsx3)")
     # we have to ensure that the assistant end token is the last token
     # so even if generation ends due to max tokens, we have to append it to the end
     if response_tokens[-1] != assistant_end:

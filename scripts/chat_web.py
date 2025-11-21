@@ -48,6 +48,7 @@ from contextlib import nullcontext
 from nanochat.common import compute_init, autodetect_device_type
 from nanochat.checkpoint_manager import load_model
 from nanochat.engine import Engine
+from live.voice_output import get_voice_output
 
 # Abuse prevention limits
 MAX_MESSAGES_PER_REQUEST = 500
@@ -72,6 +73,12 @@ parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run th
 parser.add_argument('-d', '--dtype', type=str, default='bfloat16', choices=['float32', 'bfloat16'])
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
+parser.add_argument('--voice', action='store_true', help='Enable voice output (ChatGPT-style)')
+parser.add_argument('--tts-engine', type=str, default='auto', choices=['auto', 'coqui', 'gtts', 'pyttsx3'], help='TTS engine for voice output')
+parser.add_argument('--chatgpt-voice', type=str, default='alloy', choices=['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], help='ChatGPT voice personality')
+parser.add_argument('--autonomous', action='store_true', help='Enable autonomous curiosity mode')
+parser.add_argument('--vision', action='store_true', help='Enable vision input (webcam)')
+parser.add_argument('--live', action='store_true', help='Enable live multimodal mode (vision + voice + autonomous)')
 args = parser.parse_args()
 
 # Configure logging for conversation traffic
@@ -224,6 +231,18 @@ def validate_chat_request(request: ChatRequest):
 async def lifespan(app: FastAPI):
     """Load models on all GPUs on startup."""
     print("Loading nanochat models across GPUs...")
+
+    # Initialize voice output if enabled
+    if args.voice or args.live:
+        from live.voice_output import get_voice_output
+        voice_output = get_voice_output(
+            voice=args.chatgpt_voice,
+            engine=args.tts_engine,
+            enabled=True
+        )
+        app.state.voice_output = voice_output
+        print(f"🎵 Voice output enabled: {args.chatgpt_voice} voice via {args.tts_engine} engine")
+
     app.state.worker_pool = WorkerPool(num_gpus=args.num_gpus)
     await app.state.worker_pool.initialize(args.source, model_tag=args.model_tag, step=args.step)
     print(f"Server ready at http://localhost:{args.port}")
@@ -406,6 +425,60 @@ async def stats():
                 "device": str(w.device)
             } for w in worker_pool.workers
         ]
+    }
+
+@app.post("/speech/synthesize")
+async def synthesize_speech(request: dict):
+    """
+    Synthesize speech from text (ChatGPT-style voice output).
+
+    Request body:
+    {
+        "text": "Hello, world!",
+        "voice": "alloy",  // ChatGPT voice: alloy, echo, fable, onyx, nova, shimmer
+        "engine": "gtts",  // TTS engine: gtts, pyttsx3, coqui (optional)
+        "language": "en"   // Language code (optional)
+    }
+    """
+    text = request.get("text", "")
+    voice = request.get("voice", "alloy")
+    engine = request.get("engine")
+    language = request.get("language", "en")
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    if len(text) > MAX_MESSAGE_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Text too long (max {MAX_MESSAGE_LENGTH} chars)")
+
+    try:
+        # Use voice output system
+        voice_output = getattr(app.state, 'voice_output', None)
+        if not voice_output:
+            raise HTTPException(status_code=500, detail="Voice output not initialized")
+
+        # Synthesize with specified voice
+        voice_output.speak(text, voice)
+
+        return {"status": "speech_synthesized", "voice": voice, "text_length": len(text)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech synthesis error: {str(e)}")
+
+@app.get("/speech/voices")
+async def list_voices():
+    """List available voices (ChatGPT-style)."""
+    from live.voice_output import VoiceOutput
+
+    voice_output = VoiceOutput()
+    available_voices = voice_output.list_voices()
+
+    return {
+        "voices": available_voices,
+        "engines": ["auto", "coqui", "gtts", "pyttsx3"],
+        "current_voice": args.chatgpt_voice,
+        "current_engine": args.tts_engine,
+        "voice_enabled": getattr(app.state, 'voice_output', None) is not None
     }
 
 if __name__ == "__main__":

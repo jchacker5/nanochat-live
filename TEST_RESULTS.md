@@ -1,6 +1,6 @@
 # NanoChat-Live Comprehensive Test Results
 
-**Generated:** 2025-11-20 21:26:20
+**Generated:** 2025-11-20 22:28:16
 
 ---
 
@@ -69,13 +69,13 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| scripts.base_train | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.chat_cli | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.chat_web | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.chat_sft | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.ssm_demo | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.tok_train | ❌ FAIL | Import error: No module named 'torch' |
-| scripts.tok_eval | ❌ FAIL | Import error: No module named 'tokenizers' |
+| base_train | ❌ FAIL | Import error: No module named 'torch' |
+| chat_cli | ❌ FAIL | Import error: No module named 'torch' |
+| chat_web | ❌ FAIL | Import error: No module named 'torch' |
+| chat_sft | ❌ FAIL | Import error: No module named 'torch' |
+| ssm_demo | ❌ FAIL | Import error: No module named 'torch' |
+| tok_train | ❌ FAIL | Import error: No module named 'torch' |
+| tok_eval | ❌ FAIL | Import error: No module named 'tokenizers' |
 
 
 ---

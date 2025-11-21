@@ -283,6 +283,9 @@ python scripts/ssm_demo.py
 # Phase-1: Base transformer + StableResonantSSM
 python scripts/base_train.py --config configs/srgi_phase1.yaml
 
+# Full SRGI Mini-AGI with autonomous curiosity (Phase-5)
+python scripts/base_train.py --use_srgi --use_entangle --use_ebm_hopfield --autonomous_mode=True
+
 # OR train the full multimodal agent with live mode
 python scripts/live_train.py --enable-ssm
 ```
@@ -295,6 +298,9 @@ python -m scripts.chat_web --live
 
 # OR CLI mode
 python scripts/chat_cli.py --checkpoint checkpoints/d20.pt --live
+
+# OR CLI with native voice output (ChatGPT-style)
+python scripts/chat_cli.py --checkpoint checkpoints/d20.pt --voice alloy
 ```
 
 Visit `http://localhost:8000/` — the model "sees" via webcam, "hears" via mic, and responds with phase-aware reasoning.
@@ -312,6 +318,29 @@ python scripts/base_train.py --autonomous_mode=True --curiosity_threshold=0.1
 ```
 
 **What happens**: The model stops being reactive and starts generating its own goals. It autonomously explores, asks questions nobody prompted, discovers concepts, and consolidates insights into stable attractors—exactly like biological intelligence.
+
+## 🎭 Complete Multimodal Capabilities
+
+### Input Capabilities (All Supported)
+- **🎤 Voice/Audio Input**: Raw waveforms processed through mel-spectrogram encoder
+- **📸 Image Input**: Vision diffusion encoder (DeepSeek OCR-inspired) converts images to patch tokens
+- **🎬 Video Input**: Frame-by-frame processing with temporal convolutional networks
+- **📝 Text Input**: Native tokenization with BPE
+
+### Output Capabilities (All Supported)
+- **📝 Text Output**: Native language model generation
+- **🔊 Speech Output**: **Native voice synthesis like ChatGPT** (built-in with multiple engines)
+  - ChatGPT-style voices: alloy, echo, fable, onyx, nova, shimmer
+  - Engines: Google TTS (online, high quality), pyttsx3 (offline, fast)
+  - Real-time streaming speech output
+- **🎬 Video Output**: Diffusion-based video generation (add `diffusers` for video synthesis)
+- **📸 Image Output**: Stable Diffusion image generation (add `diffusers` for images)
+
+### Autonomous Features (Phase-5 Complete)
+- **🧠 Intrinsic Curiosity**: Active Inference / Free Energy Principle
+- **🎯 Self-Generated Goals**: Predicts information gain, chooses high-surprise actions
+- **💾 Memory Consolidation**: Compresses episodic experiences into stable attractors
+- **🌙 24/7 Operation**: Runs continuously, "naps" when bored, wakes up smarter
 
 **Requirements**: SRGI model with entanglement bottleneck (`--use_entangle`) and attractor memory (`--use_ebm_hopfield`).
 
